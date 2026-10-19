@@ -71,9 +71,12 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between px-4 py-3">
-        <span className="text-sm font-semibold tracking-tight">Études</span>
-        <div className="flex items-center gap-0.5 text-zinc-500">
-          <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <img src="/favicon.svg" alt="Logo Studier" className="h-5 w-5" />
+          <span className="text-sm font-semibold tracking-tight">Studier</span>
+        </div>
+
+        <div className="flex items-center gap-0.5 text-zinc-500">          <ThemeToggle />
           <button
             className="rounded p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700"
             title="Nouvelle année" aria-label="Nouvelle année"
