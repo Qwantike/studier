@@ -1,0 +1,39 @@
+/* Intégration de Milkdown (thème "frame") à l'apparence de l'application. */
+.chapter-editor .milkdown {
+  --crepe-font-default: Inter, system-ui, sans-serif;
+  --crepe-font-title: Inter, system-ui, sans-serif;
+  --crepe-color-background: transparent;
+  --crepe-color-primary: #4f46e5;
+  --crepe-color-selected: #e0e7ff;
+  background: transparent;
+}
+/* Largeur de lecture gérée par la page (720 px) : on retire le padding par défaut. */
+.chapter-editor .milkdown .ProseMirror {
+  padding: 0 0 8rem 0;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+.chapter-editor .milkdown .ProseMirror h1, .chapter-editor .milkdown .ProseMirror h2, .chapter-editor .milkdown .ProseMirror h3 { font-weight: 600; }
+.chapter-editor .milkdown .ProseMirror h1 { font-size: 1.875rem; letter-spacing: -0.02em; }
+.chapter-editor .milkdown .ProseMirror h2 { font-size: 1.5rem; letter-spacing: -0.015em; }
+
+/* Thème sombre : mêmes variables Crepe que le thème "frame-dark", sur la palette de l'application. */
+.dark .chapter-editor .milkdown {
+  --crepe-color-background: transparent;
+  --crepe-color-on-background: #e4e4e7;
+  --crepe-color-surface: #18181b;
+  --crepe-color-surface-low: #1f1f23;
+  --crepe-color-on-surface: #d4d4d8;
+  --crepe-color-on-surface-variant: #a1a1aa;
+  --crepe-color-outline: #71717a;
+  --crepe-color-primary: #818cf8;
+  --crepe-color-secondary: #3f3f46;
+  --crepe-color-on-secondary: #e4e4e7;
+  --crepe-color-inverse: #e4e4e7;
+  --crepe-color-on-inverse: #27272a;
+  --crepe-color-hover: #27272a;
+  --crepe-color-selected: #312e81;
+  --crepe-color-inline-area: #27272a;
+  --crepe-color-inline-code: #fda4af;
+  --crepe-color-error: #f87171;
+}

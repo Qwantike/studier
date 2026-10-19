@@ -1,0 +1,8 @@
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+
+// Le proxy évite les problèmes de CORS en développement.
+export default defineConfig({
+  plugins: [react()],
+  server: { port: 5173, proxy: { "/api": "http://localhost:3001" } },
+});

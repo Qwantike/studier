@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body { @apply bg-white text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100; }
+
+/* Les contrôles natifs (dates, listes, barres de défilement) suivent le thème. */
+html.dark { color-scheme: dark; }
+
+/* Focus clavier visible, sans contour au clic. */
+:where(button, a, select, summary):focus-visible { @apply outline outline-2 outline-offset-2 outline-indigo-500; }
