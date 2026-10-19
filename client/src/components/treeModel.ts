@@ -56,6 +56,7 @@ export interface TreeCtx {
   menuId: string | null;
   setMenuId: (id: string | null) => void;
   addChild: (row: Row) => void;
+  importInto: (row: Row) => void;
   rename: (row: Row, name: string) => void;
   recolor: (row: Row, color: string) => void;
   remove: (row: Row) => void;

@@ -6,6 +6,7 @@ import { useTree, useTreeActions } from "../hooks/useTree";
 import ThemeToggle from "./ThemeToggle";
 import { TreeItem } from "./TreeItem";
 import { LEVELS, PALETTE, buildRows, countDescendants, type Row, type TreeCtx } from "./treeModel";
+import ImportMarkdownModal from "./ImportMarkdownModal";
 
 export default function Sidebar({ onClose }: { onClose: () => void }) {
   const { data, isLoading, error } = useTree();
@@ -18,6 +19,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const location = useLocation();
   const rows = useMemo(() => (data ? buildRows(data) : []), [data]);
+  const [importTarget, setImportTarget] = useState<Row | null>(null);
 
   const toggle = (id: string, force?: boolean) =>
     setExpanded((p) => ({ ...p, [id]: force ?? !p[id] }));
@@ -63,6 +65,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
       [ids[index], ids[j]] = [ids[j]!, ids[index]!];
       actions.reorder.mutate({ level: first.level, ids });
     },
+    importInto: setImportTarget,
   };
 
   return (
@@ -125,6 +128,16 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
           {rows.map((r, i) => <TreeItem key={r.id} row={r} siblings={rows} index={i} depth={0} ctx={ctx} />)}
         </ul>
       </nav>
+      {importTarget && (
+        <ImportMarkdownModal
+          subject={importTarget}
+          onClose={() => setImportTarget(null)}
+          onImported={(ids) => {
+            toggle(importTarget.id, true);
+            if (ids.length === 1) navigate(`/chapitres/${ids[0]}`);
+          }}
+        />
+      )}
     </div>
   );
 }

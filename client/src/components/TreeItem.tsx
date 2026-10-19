@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, ChevronRight, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, MoreHorizontal, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { STATUS_DOT, STATUS_LABELS } from "../api/types";
@@ -99,6 +99,11 @@ export function TreeItem({ row, siblings, index, depth, ctx }: Props) {
             {cfg.child && (
               <button className={iconBtn} onClick={() => ctx.addChild(row)} aria-label="Ajouter" title="Ajouter">
                 <Plus size={14} />
+              </button>
+            )}
+            {row.level === "subjects" && (
+              <button className={iconBtn} onClick={() => ctx.importInto(row)} aria-label="Importer une page Notion" title="Importer une page Notion (.md)">
+                <Upload size={14} />
               </button>
             )}
             <button className={iconBtn} onClick={() => ctx.setMenuId(menuOpen ? null : row.id)} aria-label="Options">
