@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { pool } from "../db/pool.js";
+import { uid } from "../middleware/auth.js";
 import { listEventsBetween } from "../services/calendarEvents.js";
 import { computeGrades, type GradeRow } from "../services/grades.js";
 import { ah, idSchema } from "./crud.js";
@@ -28,32 +29,35 @@ function defaultWeek() {
 export const dashboardRouter = Router();
 
 dashboardRouter.get("/dashboard", ah(async (req, res) => {
+  const userId = uid(req);
   const q = querySchema.parse(req.query);
   const week = q.from && q.to ? { from: q.from, to: q.to } : defaultWeek();
   const today = q.today ?? localDate(new Date());
 
   const [events, upcoming, recent, years] = await Promise.all([
-    listEventsBetween(week.from, week.to),
-    pool.query(`${LIST_SQL} WHERE e.date >= $1 ${GROUP_SQL} LIMIT 5`, [today]),
+    listEventsBetween(userId, week.from, week.to),
+    pool.query(`${LIST_SQL} WHERE e.user_id = $1 AND e.date >= $2 ${GROUP_SQL} LIMIT 5`, [userId, today]),
     pool.query(
       `SELECT c.id, c.title, c.status, c.updated_at, c.subject_id, s.name AS subject_name, s.color AS subject_color
        FROM chapters c JOIN subjects s ON s.id = c.subject_id
-       ORDER BY c.updated_at DESC LIMIT 6`),
-    pool.query<{ id: string; label: string }>("SELECT id, label FROM years ORDER BY position, created_at"),
+       WHERE c.user_id = $1
+       ORDER BY c.updated_at DESC LIMIT 6`, [userId]),
+    pool.query<{ id: string; label: string }>(
+      "SELECT id, label FROM years WHERE user_id = $1 ORDER BY position, created_at", [userId]),
   ]);
 
-  // Moyennes : sur l'année demandée, par défaut la plus récente.
-  const yearId = q.year_id ?? years.rows[years.rows.length - 1]?.id ?? null;
+  // Moyennes : sur l'année demandée si elle est à l'utilisateur, sinon la plus récente.
+  const yearId = years.rows.find((y) => y.id === q.year_id)?.id ?? years.rows[years.rows.length - 1]?.id ?? null;
   const gradeRows = yearId
     ? (await pool.query<GradeRow>(
-        `SELECT s.id AS subject_id, s.name AS subject_name, s.color AS subject_color,
+      `SELECT s.id AS subject_id, s.name AS subject_name, s.color AS subject_color,
                 s.coefficient AS subject_coefficient, sem.id AS semester_id, sem.label AS semester_label,
                 e.grade, e.coefficient AS eval_coefficient
          FROM subjects s
          JOIN semesters sem ON sem.id = s.semester_id
          LEFT JOIN evaluations e ON e.subject_id = s.id AND e.grade IS NOT NULL
-         WHERE sem.year_id = $1
-         ORDER BY sem.position, sem.created_at, s.position, s.created_at, e.date`, [yearId])).rows
+         WHERE sem.year_id = $1 AND s.user_id = $2
+         ORDER BY sem.position, sem.created_at, s.position, s.created_at, e.date`, [yearId, userId])).rows
     : [];
 
   res.json({

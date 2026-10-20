@@ -8,16 +8,16 @@ export const EVENT_SELECT_SQL = `
   LEFT JOIN subjects s ON s.id = e.subject_id
   LEFT JOIN calendar_sources cs ON cs.id = e.source_id`;
 
-export async function getEvent(id: string) {
-  const { rows } = await pool.query(`${EVENT_SELECT_SQL} WHERE e.id = $1`, [id]);
+export async function getEvent(id: string, userId: string) {
+  const { rows } = await pool.query(`${EVENT_SELECT_SQL} WHERE e.id = $1 AND e.user_id = $2`, [id, userId]);
   return rows[0] ?? null;
 }
 
-// Événements qui chevauchent [from, to[.
-export async function listEventsBetween(from: string, to: string) {
+// Événements de l'utilisateur qui chevauchent [from, to[.
+export async function listEventsBetween(userId: string, from: string, to: string) {
   const { rows } = await pool.query(
     `${EVENT_SELECT_SQL}
-     WHERE e.starts_at < $2 AND GREATEST(e.ends_at, e.starts_at + interval '1 minute') > $1
-     ORDER BY e.starts_at, e.ends_at`, [from, to]);
+     WHERE e.user_id = $1 AND e.starts_at < $3 AND GREATEST(e.ends_at, e.starts_at + interval '1 minute') > $2
+     ORDER BY e.starts_at, e.ends_at`, [userId, from, to]);
   return rows;
 }

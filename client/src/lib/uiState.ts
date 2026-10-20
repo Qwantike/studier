@@ -1,7 +1,7 @@
 import { createPersistedStore } from "./persistedStore";
 
-export const expandedStore = createPersistedStore<Record<string, boolean>>("etudes.expanded", {});
-export const sidebarStore = createPersistedStore<boolean>("etudes.sidebar", true);
+export const expandedStore = createPersistedStore<Record<string, boolean>>("etudes.expanded", {}, { scoped: true });
+export const sidebarStore = createPersistedStore<boolean>("etudes.sidebar", true, { scoped: true });
 
 /** Événement qui ouvre la palette de recherche (bouton de la barre latérale). */
 export const OPEN_SEARCH_EVENT = "etudes:open-search";
@@ -18,3 +18,5 @@ export function revealInTree(ids: string[]): void {
   // On attend le rendu de l'arbre déplié avant de chercher l'élément.
   setTimeout(() => document.querySelector(`[data-node-id="${target}"]`)?.scrollIntoView({ block: "center" }), 80);
 }
+
+

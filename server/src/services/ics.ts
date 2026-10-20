@@ -61,20 +61,20 @@ export function focusDate(events: IcsEvent[]): string | null {
 }
 
 /**
- * Upsert par ics_uid (à appeler dans une transaction). Seules les lignes réellement modifiées sont
+ * Upsert par (user_id, ics_uid) (à appeler dans une transaction). Seules les lignes réellement modifiées sont
  * comptées ; la matière rattachée à la main n'est jamais écrasée. sourceId est conservé si l'import
  * ne vient pas d'un abonnement (null).
  */
-export async function upsertEvents(client: PoolClient, events: IcsEvent[], sourceId: string | null) {
+export async function upsertEvents(client: PoolClient, userId: string, events: IcsEvent[], sourceId: string | null) {
   let created = 0;
   let updated = 0;
   for (let i = 0; i < events.length; i += 2000) {
     const chunk = events.slice(i, i + 2000);
     const { rows } = await client.query<{ inserted: boolean }>(
-      `INSERT INTO calendar_events AS t (title, starts_at, ends_at, location, ics_uid, source_id)
-       SELECT u.*, $6::uuid
+      `INSERT INTO calendar_events AS t (user_id, title, starts_at, ends_at, location, ics_uid, source_id)
+       SELECT $6::uuid, u.*, $7::uuid
        FROM unnest($1::text[], $2::timestamptz[], $3::timestamptz[], $4::text[], $5::text[]) AS u
-       ON CONFLICT (ics_uid) DO UPDATE
+       ON CONFLICT (user_id, ics_uid) DO UPDATE
          SET title = EXCLUDED.title, starts_at = EXCLUDED.starts_at, ends_at = EXCLUDED.ends_at,
              location = EXCLUDED.location, source_id = COALESCE(EXCLUDED.source_id, t.source_id)
          WHERE (t.title, t.starts_at, t.ends_at, t.location, t.source_id)
@@ -82,7 +82,7 @@ export async function upsertEvents(client: PoolClient, events: IcsEvent[], sourc
                                  COALESCE(EXCLUDED.source_id, t.source_id))
        RETURNING (xmax = 0) AS inserted`,
       [chunk.map((e) => e.title), chunk.map((e) => e.start), chunk.map((e) => e.end),
-       chunk.map((e) => e.location), chunk.map((e) => e.uid), sourceId]);
+      chunk.map((e) => e.location), chunk.map((e) => e.uid), userId, sourceId]);
     for (const r of rows) { if (r.inserted) created++; else updated++; }
   }
   return { created, updated };

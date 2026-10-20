@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { pool } from "../db/pool.js";
+import { uid } from "../middleware/auth.js";
 
 export const treeRouter = Router();
 
@@ -19,14 +20,15 @@ function groupBy<T>(items: T[], key: (t: T) => string): Map<string, T[]> {
 }
 
 // Arborescence complète (sans le contenu des chapitres) en 4 requêtes.
-treeRouter.get("/tree", async (_req, res, next) => {
+treeRouter.get("/tree", async (req, res, next) => {
   try {
-    const order = "ORDER BY position, created_at";
+    const u = [uid(req)];
+    const order = "WHERE user_id = $1 ORDER BY position, created_at";
     const [years, semesters, subjects, chapters] = await Promise.all([
-      pool.query<YearRow>(`SELECT id, label, position FROM years ${order}`),
-      pool.query<SemesterRow>(`SELECT id, label, position, year_id FROM semesters ${order}`),
-      pool.query<SubjectRow>(`SELECT id, name, color, coefficient, teacher, position, semester_id FROM subjects ${order}`),
-      pool.query<ChapterRow>(`SELECT id, title, status, position, subject_id FROM chapters ${order}`),
+      pool.query<YearRow>(`SELECT id, label, position FROM years ${order}`, u),
+      pool.query<SemesterRow>(`SELECT id, label, position, year_id FROM semesters ${order}`, u),
+      pool.query<SubjectRow>(`SELECT id, name, color, coefficient, teacher, position, semester_id FROM subjects ${order}`, u),
+      pool.query<ChapterRow>(`SELECT id, title, status, position, subject_id FROM chapters ${order}`, u),
     ]);
     const semByYear = groupBy(semesters.rows, (s) => s.year_id);
     const subBySem = groupBy(subjects.rows, (s) => s.semester_id);

@@ -7,6 +7,7 @@ import ThemeToggle from "./ThemeToggle";
 import { TreeItem } from "./TreeItem";
 import { LEVELS, PALETTE, buildRows, countDescendants, type Row, type TreeCtx } from "./treeModel";
 import ImportMarkdownModal from "./ImportMarkdownModal";
+import UserMenu from "./UserMenu";
 
 export default function Sidebar({ onClose }: { onClose: () => void }) {
   const { data, isLoading, error } = useTree();
@@ -131,6 +132,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
           {rows.map((r, i) => <TreeItem key={r.id} row={r} siblings={rows} index={i} depth={0} ctx={ctx} />)}
         </ul>
       </nav>
+      <UserMenu />
       {importTarget && (
         <ImportMarkdownModal
           subject={importTarget}

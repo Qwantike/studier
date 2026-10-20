@@ -3,9 +3,10 @@ import multer from "multer";
 import { z } from "zod";
 import { pool, withTx } from "../db/pool.js";
 import { HttpError } from "../errors.js";
+import { uid } from "../middleware/auth.js";
 import { getEvent, listEventsBetween } from "../services/calendarEvents.js";
 import { eventsFromCalendar, focusDate, parseIcsText, upsertEvents, type IcsEvent } from "../services/ics.js";
-import { ah, idSchema } from "./crud.js";
+import { ah, assertOwned, idSchema } from "./crud.js";
 
 const isoDate = z.string().datetime({ offset: true, message: "Date/heure invalide" });
 const eventBase = z.object({
@@ -45,6 +46,7 @@ calendarRouter.post(
   }),
   ah(async (req, res) => {
     if (!req.file) throw new HttpError(400, "Aucun fichier reçu (champ « file » attendu)");
+    const userId = uid(req);
     const cal = parseIcsText(req.file.buffer.toString("utf8").replace(/^\uFEFF/, ""));
 
     let events: IcsEvent[];
@@ -52,37 +54,44 @@ calendarRouter.post(
       if (err instanceof HttpError) throw err;
       throw new HttpError(400, "Impossible de lire ce fichier .ics");
     }
-    const { created, updated } = await withTx((client) => upsertEvents(client, events, null));
+    const { created, updated } = await withTx((client) => upsertEvents(client, userId, events, null));
     res.json({ created, updated, unchanged: events.length - created - updated, focus_date: focusDate(events) });
   }),
 );
 
 // Annule les imports : supprime uniquement les événements issus d'un .ics (fichier ou abonnement).
-calendarRouter.delete("/calendar/imported", ah(async (_req, res) => {
-  const { rowCount } = await pool.query("DELETE FROM calendar_events WHERE ics_uid IS NOT NULL");
+calendarRouter.delete("/calendar/imported", ah(async (req, res) => {
+  const { rowCount } = await pool.query(
+    "DELETE FROM calendar_events WHERE ics_uid IS NOT NULL AND user_id = $1", [uid(req)]);
   res.json({ deleted: rowCount ?? 0 });
 }));
 
 calendarRouter.get("/calendar-events", ah(async (req, res) => {
   const { from, to } = rangeSchema.parse(req.query);
-  res.json(await listEventsBetween(from, to));
+  res.json(await listEventsBetween(uid(req), from, to));
 }));
 
 calendarRouter.post("/calendar-events", ah(async (req, res) => {
-  const entries = defined(createSchema.parse(req.body));
+  const userId = uid(req);
+  const body = createSchema.parse(req.body);
+  if (body.subject_id) await assertOwned("subjects", body.subject_id, userId, "Matière introuvable");
+  const entries = [...defined(body), ["user_id", userId] as [string, unknown]];
   const { rows } = await fkAs400(() => pool.query<{ id: string }>(
     `INSERT INTO calendar_events (${entries.map(([k]) => k).join(", ")})
      VALUES (${entries.map((_, i) => `$${i + 1}`).join(", ")}) RETURNING id`,
     entries.map(([, v]) => v)));
-  res.status(201).json(await getEvent(rows[0]!.id));
+  res.status(201).json(await getEvent(rows[0]!.id, userId));
 }));
 
 calendarRouter.patch("/calendar-events/:id", ah(async (req, res) => {
+  const userId = uid(req);
   const id = idSchema.parse(req.params.id);
-  const entries = defined(updateSchema.parse(req.body));
+  const body = updateSchema.parse(req.body);
+  const entries = defined(body);
   if (entries.length === 0) throw new HttpError(400, "Aucun champ à modifier");
-  const cur = await getEvent(id);
+  const cur = await getEvent(id, userId);
   if (!cur) throw new HttpError(404, "Événement introuvable");
+  if (body.subject_id) await assertOwned("subjects", body.subject_id, userId, "Matière introuvable");
 
   // La cohérence début/fin se vérifie sur les valeurs finales (anciennes + nouvelles).
   const patch = Object.fromEntries(entries) as Record<string, unknown>;
@@ -91,13 +100,15 @@ calendarRouter.patch("/calendar-events/:id", ah(async (req, res) => {
   if (end < start) throw new HttpError(400, "La fin doit être après le début");
 
   await fkAs400(() => pool.query(
-    `UPDATE calendar_events SET ${entries.map(([k], i) => `${k} = $${i + 1}`).join(", ")} WHERE id = $${entries.length + 1}`,
-    [...entries.map(([, v]) => v), id]));
-  res.json(await getEvent(id));
+    `UPDATE calendar_events SET ${entries.map(([k], i) => `${k} = $${i + 1}`).join(", ")}
+     WHERE id = $${entries.length + 1} AND user_id = $${entries.length + 2}`,
+    [...entries.map(([, v]) => v), id, userId]));
+  res.json(await getEvent(id, userId));
 }));
 
 calendarRouter.delete("/calendar-events/:id", ah(async (req, res) => {
-  const { rowCount } = await pool.query("DELETE FROM calendar_events WHERE id = $1", [idSchema.parse(req.params.id)]);
+  const { rowCount } = await pool.query(
+    "DELETE FROM calendar_events WHERE id = $1 AND user_id = $2", [idSchema.parse(req.params.id), uid(req)]);
   if (!rowCount) throw new HttpError(404, "Événement introuvable");
   res.status(204).end();
 }));

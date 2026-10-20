@@ -18,6 +18,16 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     res.status(err.status).json({ error: { message: err.message } });
     return;
   }
+  // Erreurs de body-parser (corps trop gros, JSON mal formé) : sinon elles finiraient en 500.
+  const type = (err as { type?: string }).type;
+  if (type === "entity.too.large") {
+    res.status(413).json({ error: { message: "Requête trop volumineuse" } });
+    return;
+  }
+  if (type === "entity.parse.failed") {
+    res.status(400).json({ error: { message: "JSON invalide" } });
+    return;
+  }
   console.error(err);
   res.status(500).json({ error: { message: "Erreur interne du serveur" } });
 };
