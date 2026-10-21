@@ -4,6 +4,7 @@ import { api, isNotFound } from "../api/client";
 import type { Chapter } from "../api/types";
 import ErrorMessage from "../components/ErrorMessage";
 import ChapterEditor from "../components/ChapterEditor";
+import ExportChapterButton from "../components/ExportChapterButton";
 import { waitForSaves } from "../hooks/useChapterSaver";
 
 export default function ChapterPage() {
@@ -29,5 +30,13 @@ export default function ChapterPage() {
       </p>
     );
   }
-  return <ChapterEditor key={data.id} chapter={data} />;
+  return (
+    <>
+      {/* Bouton fixé en haut à droite de la zone de contenu, au-dessus de l'éditeur. */}
+      <div className="pointer-events-none sticky top-0 z-10 flex h-0 justify-end px-3 pt-3">
+        <div className="pointer-events-auto"><ExportChapterButton chapterId={data.id} /></div>
+      </div>
+      <ChapterEditor key={data.id} chapter={data} />
+    </>
+  );
 }
