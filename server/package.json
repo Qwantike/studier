@@ -7,7 +7,8 @@
     "migrate": "tsx src/db/migrate.ts",
     "seed": "tsx src/db/seed.ts",
     "user:claim": "tsx src/db/claimLegacy.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",
@@ -29,6 +30,9 @@
     "@types/multer": "^2.3.0",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.11.10",
-    "tsx": "^4.19.0"
+    "@types/supertest": "^6.0.2",
+    "supertest": "^7.0.0",
+    "tsx": "^4.19.0",
+    "vitest": "^2.1.8"
   }
 }
