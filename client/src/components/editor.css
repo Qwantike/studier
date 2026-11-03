@@ -13,9 +13,19 @@
   font-size: 1.0625rem;
   line-height: 1.75;
 }
-.chapter-editor .milkdown .ProseMirror h1, .chapter-editor .milkdown .ProseMirror h2, .chapter-editor .milkdown .ProseMirror h3 { font-weight: 600; }
-.chapter-editor .milkdown .ProseMirror h1 { font-size: 1.875rem; letter-spacing: -0.02em; }
-.chapter-editor .milkdown .ProseMirror h2 { font-size: 1.5rem; letter-spacing: -0.015em; }
+.chapter-editor .milkdown .ProseMirror h1,
+.chapter-editor .milkdown .ProseMirror h2,
+.chapter-editor .milkdown .ProseMirror h3 {
+  font-weight: 600;
+}
+.chapter-editor .milkdown .ProseMirror h1 {
+  font-size: 1.875rem;
+  letter-spacing: -0.02em;
+}
+.chapter-editor .milkdown .ProseMirror h2 {
+  font-size: 1.5rem;
+  letter-spacing: -0.015em;
+}
 
 /* Thème sombre : mêmes variables Crepe que le thème "frame-dark", sur la palette de l'application. */
 .dark .chapter-editor .milkdown {
