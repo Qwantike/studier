@@ -16,14 +16,12 @@ export const notFound: RequestHandler = (req, _res, next) =>
 // Format d'erreur unique : { error: { message, details? } }
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   if (err instanceof ZodError) {
-    res
-      .status(400)
-      .json({
-        error: {
-          message: 'Données invalides',
-          details: err.flatten().fieldErrors,
-        },
-      })
+    res.status(400).json({
+      error: {
+        message: 'Données invalides',
+        details: err.flatten().fieldErrors,
+      },
+    })
     return
   }
   if (err instanceof HttpError) {

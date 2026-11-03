@@ -140,13 +140,11 @@ describe('sélections et isolation', () => {
         404,
       )
     expectStatus(
-      await A.agent
-        .post('/api/exports')
-        .send({
-          kind: 'selection',
-          formats: ['md'],
-          roots: [{ level: 'chapters', id: foreign }],
-        }),
+      await A.agent.post('/api/exports').send({
+        kind: 'selection',
+        formats: ['md'],
+        roots: [{ level: 'chapters', id: foreign }],
+      }),
       404,
     )
   })
