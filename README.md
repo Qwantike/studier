@@ -78,3 +78,10 @@ La page « Emploi du temps » affiche une semaine (lundi à dimanche). Le bouton
 ## Export des cours et des données
 
 Export PDF par chapitre, ZIP de sélection et copie complète ZIP/SQLite depuis le profil : voir [la documentation des exports](docs/exports.md).
+
+## Diagrammes et tableaux blancs
+
+Les chapitres acceptent les blocs `mermaid` avec aperçu. Des tableaux Excalidraw
+privés peuvent être rattachés à une matière ou un chapitre, avec sauvegarde JSON,
+quotas et export PNG/SVG. Appliquer `npm run migrate` après installation.
+Voir [le guide diagrammes et tableaux blancs](docs/diagrams-whiteboards.md).
