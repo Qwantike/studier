@@ -32,6 +32,7 @@ async function migrate(): Promise<void> {
       await client.query('ROLLBACK')
       throw new Error(
         `Échec de la migration ${file} : ${(err as Error).message}`,
+        { cause: err },
       )
     } finally {
       client.release()

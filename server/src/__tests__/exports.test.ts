@@ -26,7 +26,7 @@ const post = async (u: TestUser, path: string, body: object) =>
   expectStatus(await u.agent.post(`/api/${path}`).send(body), 201).body
     .id as string
 const binary = (
-  response: any,
+  response: request.Response,
   callback: (error: Error | null, body: Buffer) => void,
 ) => {
   const chunks: Buffer[] = []

@@ -110,7 +110,12 @@ authRouter.post(
       u.id,
     ])
     await startSession(req, res, u.id)
-    const { password_hash: _omit, ...user } = u
+    const user: PublicUser = {
+      id: u.id,
+      email: u.email,
+      display_name: u.display_name,
+      created_at: u.created_at,
+    }
     res.json(user)
   }),
 )
