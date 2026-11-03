@@ -156,6 +156,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
       <div className="space-y-0.5 px-2 pb-2">
         {[
           { to: '/', label: 'Tableau de bord', icon: Home, end: true },
+          { to: '/tableaux', label: 'Tableaux blancs', icon: Home, end: false },
           {
             to: '/evaluations',
             label: 'Évaluations',

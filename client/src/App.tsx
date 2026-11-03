@@ -12,6 +12,7 @@ import ProfilePage from './pages/ProfilePage'
 
 // L'éditeur (Milkdown, CodeMirror, KaTeX) est lourd : chargé seulement à l'ouverture d'un chapitre.
 const ChapterPage = lazy(() => import('./pages/ChapterPage'))
+const WhiteboardsPage = lazy(() => import('./pages/WhiteboardsPage'))
 
 export default function App() {
   const { status, retry } = useAuth()
@@ -54,6 +55,22 @@ export default function App() {
               }
             >
               <ChapterPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="tableaux"
+          element={
+            <Suspense fallback={<p className="p-6">Chargement…</p>}>
+              <WhiteboardsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="tableaux/:id"
+          element={
+            <Suspense fallback={<p className="p-6">Chargement…</p>}>
+              <WhiteboardsPage />
             </Suspense>
           }
         />
