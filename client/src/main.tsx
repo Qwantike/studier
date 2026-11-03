@@ -1,6 +1,6 @@
 import './lib/excalidrawAssets'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AuthProvider } from './hooks/useAuth'
+import { AuthProvider } from './hooks/AuthProvider'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'

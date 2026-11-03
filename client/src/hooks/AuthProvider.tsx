@@ -3,44 +3,15 @@ import {
   useQueryClient,
   type QueryClient,
 } from '@tanstack/react-query'
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  type ReactNode,
-} from 'react'
+import { useCallback, useEffect, useMemo, type ReactNode } from 'react'
 import { ApiError, UNAUTHORIZED_EVENT, api } from '../api/client'
+import {
+  AuthContext,
+  ME_KEY,
+  type AuthUser,
+  type AuthContextValue,
+} from './authContext'
 import { setStorageScope } from '../lib/persistedStore'
-
-export interface AuthUser {
-  id: string
-  email: string
-  display_name: string
-  created_at: string
-}
-type Status = 'loading' | 'error' | 'anonymous' | 'authenticated'
-
-interface AuthContextValue {
-  status: Status
-  user: AuthUser | null
-  retry: () => void
-  login: (email: string, password: string) => Promise<void>
-  register: (
-    email: string,
-    password: string,
-    displayName?: string,
-  ) => Promise<void>
-  logout: () => Promise<void>
-  /** Met à jour l'utilisateur en mémoire (après modification du profil). */
-  setUser: (user: AuthUser) => void
-  /** Efface la session locale (après suppression du compte ou déconnexion de tous les appareils). */
-  endSession: () => void
-}
-
-const ME_KEY = ['me'] as const
-const AuthContext = createContext<AuthContextValue | null>(null)
 
 // Retire du cache tout ce qui dépend d'un utilisateur (arbre, chapitres, évaluations…), sauf l'identité.
 const dropUserData = (qc: QueryClient) =>
@@ -122,17 +93,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [qc],
   )
 
+  const { isPending, isError, refetch } = me
+  const retry = useCallback(() => {
+    void refetch()
+  }, [refetch])
+
   const value = useMemo<AuthContextValue>(
     () => ({
-      status: me.isPending
+      status: isPending
         ? 'loading'
-        : me.isError
+        : isError
           ? 'error'
           : user
             ? 'authenticated'
             : 'anonymous',
       user,
-      retry: () => void me.refetch(),
+      retry,
       login,
       register,
       logout,
@@ -140,9 +116,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       endSession,
     }),
     [
-      me.isPending,
-      me.isError,
-      me.refetch,
+      isPending,
+      isError,
+      retry,
       user,
       login,
       register,
@@ -153,10 +129,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth doit être utilisé dans <AuthProvider>')
-  return ctx
 }

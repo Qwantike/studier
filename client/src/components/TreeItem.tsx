@@ -56,12 +56,11 @@ function ColorDot({
   onChange: (c: string) => void
 }) {
   const [v, setV] = useState(color)
-  useEffect(() => setV(color), [color])
   useEffect(() => {
     if (v === color) return
     const t = setTimeout(() => onChange(v), 500)
     return () => clearTimeout(t)
-  }, [v]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [v, color, onChange])
   return (
     <label
       className="relative flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center"
@@ -146,7 +145,11 @@ export function TreeItem({ row, siblings, index, depth, ctx }: Props) {
         )}
 
         {row.level === 'subjects' && row.color && (
-          <ColorDot color={row.color} onChange={(c) => ctx.recolor(row, c)} />
+          <ColorDot
+            key={row.color}
+            color={row.color}
+            onChange={(c) => ctx.recolor(row, c)}
+          />
         )}
         {row.level === 'chapters' && row.status && (
           <span

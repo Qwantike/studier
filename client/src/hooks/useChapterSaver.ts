@@ -37,9 +37,13 @@ export function useChapterSaver(chapterId: string, delay = 1000) {
   const pending = useRef<ChapterPatch>({})
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const chain = useRef<Promise<void>>(Promise.resolve())
+  const retryFlush = useRef<() => Promise<void>>(() => Promise.resolve())
   const [state, setState] = useState<SaveState>('saved')
 
-  const hasPending = () => Object.keys(pending.current).length > 0
+  const hasPending = useCallback(
+    () => Object.keys(pending.current).length > 0,
+    [],
+  )
 
   const send = useCallback(async () => {
     clearTimeout(timer.current)
@@ -64,19 +68,21 @@ export function useChapterSaver(chapterId: string, delay = 1000) {
     } catch {
       pending.current = { ...body, ...pending.current } // on garde les données pour le nouvel essai
       setState('error')
-      timer.current = setTimeout(() => void flush(), 3000)
+      clearTimeout(timer.current)
+      timer.current = setTimeout(() => void retryFlush.current(), 3000)
     }
-  }, [chapterId, qc]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [chapterId, qc, hasPending])
 
   // Les envois sont chaînés pour garder l'ordre des frappes.
   const flush = useCallback((): Promise<void> => {
     const p = chain.current.then(send)
     chain.current = p
     inflightByChapter.set(chapterId, p)
-    void p.finally(() => {
+    const done = () => {
       if (inflightByChapter.get(chapterId) === p)
         inflightByChapter.delete(chapterId)
-    })
+    }
+    void p.then(done, done)
     return p
   }, [chapterId, send])
 
@@ -91,6 +97,7 @@ export function useChapterSaver(chapterId: string, delay = 1000) {
   )
 
   useEffect(() => {
+    retryFlush.current = flush
     // Fermeture de l'onglet : envoi "keepalive" des modifications en attente.
     const onUnload = () => {
       if (!hasPending()) return
@@ -114,7 +121,7 @@ export function useChapterSaver(chapterId: string, delay = 1000) {
       window.removeEventListener('beforeunload', onUnload)
       void flush() // navigation vers un autre chapitre : on n'abandonne rien
     }
-  }, [chapterId, flush])
+  }, [chapterId, flush, hasPending])
 
   return { state, queue, flush }
 }

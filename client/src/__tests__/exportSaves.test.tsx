@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { create, act, type ReactTestRenderer } from 'react-test-renderer'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
@@ -9,7 +9,10 @@ vi.mock('../api/client', () => ({ api: vi.fn().mockResolvedValue(undefined) }))
 let renderer: ReactTestRenderer
 let saver: ReturnType<typeof useChapterSaver>
 function Harness() {
-  saver = useChapterSaver('chapter-1')
+  const current = useChapterSaver('chapter-1')
+  useEffect(() => {
+    saver = current
+  }, [current])
   return null
 }
 beforeEach(async () => {
@@ -103,4 +106,46 @@ it('attend une sauvegarde déjà lancée avant de terminer', async () => {
     await pending
   })
   expect(finished).toBe(true)
+})
+it('réessaie automatiquement trois secondes après un échec', async () => {
+  vi.mocked(api).mockRejectedValueOnce(new Error('Hors ligne'))
+  act(() => saver.queue({ content_md: 'À conserver' }))
+  await act(async () => {
+    await saver.flush()
+  })
+  expect(saver.state).toBe('error')
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2999)
+  })
+  expect(api).toHaveBeenCalledTimes(1)
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1)
+  })
+  expect(api).toHaveBeenCalledTimes(2)
+  expect(saver.state).toBe('saved')
+})
+it('une reprise après échec conserve la saisie arrivée pendant la requête', async () => {
+  let fail!: (error: Error) => void
+  vi.mocked(api).mockImplementationOnce(
+    () =>
+      new Promise((_resolve, reject) => {
+        fail = reject
+      }),
+  )
+  act(() => saver.queue({ title: 'Titre', content_md: 'Ancien texte' }))
+  let first!: Promise<void>
+  await act(async () => {
+    first = saver.flush()
+  })
+  act(() => saver.queue({ content_md: 'Dernière frappe' }))
+  await act(async () => {
+    fail(new Error('Hors ligne'))
+    await first
+  })
+  await act(async () => {
+    await saver.flush()
+  })
+  const sent = JSON.parse(vi.mocked(api).mock.calls[1]![1]!.body as string)
+  expect(sent).toEqual({ title: 'Titre', content_md: 'Dernière frappe' })
+  expect(saver.state).toBe('saved')
 })
