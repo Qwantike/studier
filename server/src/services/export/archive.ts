@@ -78,13 +78,13 @@ export async function sqlite(snapshot: Snapshot): Promise<Buffer> {
   const SQL = await loadSql()
   const db = new SQL.Database()
   try {
-    db.run('PRAGMA foreign_keys=ON; PRAGMA user_version=1; BEGIN;')
+    db.run('PRAGMA foreign_keys=ON; PRAGMA user_version=2; BEGIN;')
     db.run(
       'CREATE TABLE export_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
     )
     db.run('INSERT INTO export_metadata VALUES (?, ?), (?, ?)', [
       'version',
-      '1',
+      '2',
       'exported_at',
       snapshot.exported_at,
     ])
@@ -98,7 +98,13 @@ export async function sqlite(snapshot: Snapshot): Promise<Buffer> {
       )
       try {
         for (const row of snapshot.tables[table])
-          statement.run(keys.map((k) => row[k] ?? null))
+          statement.run(
+            keys.map((k) =>
+              typeof row[k] === 'object' && row[k] !== null
+                ? JSON.stringify(row[k])
+                : ((row[k] as string | number | null) ?? null),
+            ),
+          )
       } finally {
         statement.free()
       }
@@ -144,12 +150,18 @@ export async function archive(
       add(`cours/${path}.md`, strToU8(markdown(chapter)))
     if (formats.includes('pdf')) add(`cours/${path}.pdf`, await pdf(chapter))
   }
+  for (const board of snapshot.tables.whiteboards) {
+    add(
+      `tableaux/${board.id}.excalidraw`,
+      strToU8(JSON.stringify(board.scene, null, 2)),
+    )
+  }
   add(
     'manifest.json',
     strToU8(
       JSON.stringify(
         {
-          version: 1,
+          version: 2,
           exported_at: snapshot.exported_at,
           complete,
           formats,
@@ -169,6 +181,13 @@ export async function archive(
             path,
             title: row.title,
           })),
+          whiteboards: snapshot.tables.whiteboards.map((b) => ({
+            id: b.id,
+            title: b.title,
+            subject_id: b.subject_id,
+            chapter_id: b.chapter_id,
+            path: `tableaux/${b.id}.excalidraw`,
+          })),
           omitted: ['password_hash', 'token_hash'],
         },
         null,
@@ -180,7 +199,7 @@ export async function archive(
   add(
     'LIRE-MOI.txt',
     strToU8(
-      "Export Studier v1\nLes fichiers de cours sont classés par année/semestre/matière.\nLes identifiants dans les noms évitent les collisions. Une sélection vide reste décrite dans le manifeste.\nL'export complet contient data.json : profil, cours, évaluations, liens, événements, abonnements et métadonnées des sessions.\nMots de passe et jetons de session exclus. Les URL des calendriers peuvent être privées : protégez cette archive.\nPDF : rendu textuel, titres, listes, code et tables en blocs. HTML et formules LaTeX restent en texte source ; images représentées par leur description et URL, sans téléchargement réseau.\nLa base .db proposée séparément est un instantané SQLite portable, pas un dump PostgreSQL ni une restauration automatique.\n",
+      "Export Studier v2\nLes fichiers de cours sont classés par année/semestre/matière.\nLes identifiants dans les noms évitent les collisions. Une sélection vide reste décrite dans le manifeste.\nL'export complet contient data.json : profil, cours, tableaux blancs, évaluations, liens, événements, abonnements et métadonnées des sessions. Les scènes sont aussi dans tableaux/*.excalidraw. Les blocs Mermaid restent en source dans le MD et le PDF textuel.\nMots de passe et jetons de session exclus. Les URL des calendriers peuvent être privées : protégez cette archive.\nPDF : rendu textuel, titres, listes, code et tables en blocs. HTML et formules LaTeX restent en texte source ; images représentées par leur description et URL, sans téléchargement réseau.\nLa base .db proposée séparément est un instantané SQLite portable, pas un dump PostgreSQL ni une restauration automatique.\n",
     ),
   )
   return Buffer.from(zipSync(files, { level: 6 }))

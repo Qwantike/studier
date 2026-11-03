@@ -337,3 +337,42 @@ describe('quotas appliqués en base', () => {
     await insert()
   }, 30000)
 })
+
+describe('exports des tableaux', () => {
+  it('inclut les scènes complètes dans JSON, ZIP et SQLite sans fuite', async () => {
+    const data = await readSnapshot(A.id)
+    expect(data.version).toBe(2)
+    expect(data.tables.whiteboards.some((b) => b.id === board)).toBe(true)
+    expect(JSON.stringify(data.tables.whiteboards)).not.toContain('SECRET-B')
+    const zip = unzipSync(await archive(data, ['md'], undefined, true))
+    expect(
+      JSON.parse(strFromU8(zip[`tableaux/${board}.excalidraw`]!)).type,
+    ).toBe('excalidraw')
+    const SQL = await initSqlJs(),
+      db = new SQL.Database(await sqlite(data))
+    try {
+      expect(db.exec('PRAGMA foreign_key_check')).toEqual([])
+      const rows = db.exec(
+        "SELECT scene FROM whiteboards WHERE id='" + board + "'",
+      )[0]!
+      expect(JSON.parse(String(rows.values[0]![0])).elements[0].type).toBe(
+        'rectangle',
+      )
+      expect(db.exec('PRAGMA user_version')[0]!.values).toEqual([[2]])
+    } finally {
+      db.close()
+    }
+  })
+  it('une sélection de chapitre exclut les tableaux de matière, une matière les inclut', async () => {
+    const c = await readSnapshot(A.id, undefined, [
+      { level: 'chapters', id: chapter },
+    ])
+    expect(c.tables.whiteboards.map((b) => b.id)).toEqual([board])
+    const s = await readSnapshot(A.id, undefined, [
+      { level: 'subjects', id: subject },
+    ])
+    expect(s.tables.whiteboards.length).toBeGreaterThan(
+      c.tables.whiteboards.length,
+    )
+  })
+})
