@@ -63,3 +63,7 @@ La page « Emploi du temps » affiche une semaine (lundi à dimanche). Le bouton
 ## Dépannage
 - *« Impossible de joindre le serveur »* : l'API n'est pas lancée ou `DATABASE_URL` est incorrect (voir la sortie de `npm run dev`).
 - *Repartir de zéro* : `psql "$DATABASE_URL" -c "TRUNCATE years, calendar_events, calendar_sources CASCADE"` puis `npm run seed`.
+
+## Export des cours et des données
+
+Export PDF par chapitre, ZIP de sélection et copie complète ZIP/SQLite depuis le profil : voir [la documentation des exports](docs/exports.md).
