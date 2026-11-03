@@ -1,6 +1,11 @@
 import { languages } from '@codemirror/language-data'
 import { mermaidPreview } from '../lib/mermaidPreview'
-import { insert } from '@milkdown/kit/utils'
+import { commandsCtx, editorViewCtx } from '@milkdown/kit/core'
+import {
+  clearTextInCurrentBlockCommand,
+  codeBlockSchema,
+  setBlockTypeCommand,
+} from '@milkdown/kit/preset/commonmark'
 import { Crepe } from '@milkdown/crepe'
 import '@milkdown/crepe/theme/common/style.css'
 import '@milkdown/crepe/theme/frame.css'
@@ -21,7 +26,7 @@ function Inner({ initial, onChange }: Props) {
     onChangeRef.current = onChange
   }, [onChange])
 
-  const { get } = useEditor((root) => {
+  useEditor((root) => {
     const crepe = new Crepe({
       root,
       defaultValue: initial,
@@ -32,6 +37,30 @@ function Inner({ initial, onChange }: Props) {
         [Crepe.Feature.CodeMirror]: {
           languages,
           renderPreview: mermaidPreview,
+        },
+        [Crepe.Feature.BlockEdit]: {
+          buildMenu: (builder) => {
+            builder.getGroup('advanced').addItem('mermaid', {
+              label: 'Mermaid',
+              icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="8" y="2" width="8" height="5" rx="1"/><path d="M12 7v5M5 12h14M5 12v4M19 12v4"/><rect x="1" y="16" width="8" height="5" rx="1"/><rect x="15" y="16" width="8" height="5" rx="1"/></svg>',
+              onRun: (ctx) => {
+                const commands = ctx.get(commandsCtx)
+                // Même chemin que le bloc Code natif : retire aussi /mermaid.
+                commands.call(clearTextInCurrentBlockCommand.key)
+                commands.call(setBlockTypeCommand.key, {
+                  nodeType: codeBlockSchema.type(ctx),
+                  attrs: { language: 'mermaid' },
+                })
+                const view = ctx.get(editorViewCtx)
+                view.dispatch(
+                  view.state.tr
+                    .insertText('flowchart TD\n  A[Idée] --> B[Développement]')
+                    .scrollIntoView(),
+                )
+                view.focus()
+              },
+            })
+          },
         },
         [Crepe.Feature.Placeholder]: {
           text: 'Écrivez vos notes… tapez / pour insérer un bloc, $$ pour une formule',
@@ -46,24 +75,7 @@ function Inner({ initial, onChange }: Props) {
     return crepe
   }, [])
 
-  return (
-    <>
-      <button
-        type="button"
-        className="mb-3 rounded-lg border px-3 py-1.5 text-sm dark:border-zinc-700"
-        onClick={() =>
-          get()?.action(
-            insert(
-              '\n```mermaid\nflowchart TD\n  A[Idée] --> B[Développement]\n```\n',
-            ),
-          )
-        }
-      >
-        Insérer un diagramme Mermaid
-      </button>
-      <Milkdown />
-    </>
-  )
+  return <Milkdown />
 }
 
 export default function MarkdownEditor(props: Props) {
