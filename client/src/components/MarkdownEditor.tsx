@@ -1,10 +1,12 @@
 import { languages } from '@codemirror/language-data'
+import { mermaidPreview } from '../lib/mermaidPreview'
+import { insert } from '@milkdown/kit/utils'
 import { Crepe } from '@milkdown/crepe'
 import '@milkdown/crepe/theme/common/style.css'
 import '@milkdown/crepe/theme/frame.css'
 import { Milkdown, MilkdownProvider, useEditor } from '@milkdown/react'
 import 'katex/dist/katex.min.css'
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import './editor.css'
 
 interface Props {
@@ -15,9 +17,11 @@ interface Props {
 
 function Inner({ initial, onChange }: Props) {
   const onChangeRef = useRef(onChange)
-  onChangeRef.current = onChange
+  useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
 
-  useEditor((root) => {
+  const { get } = useEditor((root) => {
     const crepe = new Crepe({
       root,
       defaultValue: initial,
@@ -25,7 +29,10 @@ function Inner({ initial, onChange }: Props) {
       features: { [Crepe.Feature.ImageBlock]: false },
       featureConfigs: {
         // Coloration syntaxique : la liste complète des langages CodeMirror, chargés à la demande.
-        [Crepe.Feature.CodeMirror]: { languages },
+        [Crepe.Feature.CodeMirror]: {
+          languages,
+          renderPreview: mermaidPreview,
+        },
         [Crepe.Feature.Placeholder]: {
           text: 'Écrivez vos notes… tapez / pour insérer un bloc, $$ pour une formule',
         },
@@ -39,7 +46,24 @@ function Inner({ initial, onChange }: Props) {
     return crepe
   }, [])
 
-  return <Milkdown />
+  return (
+    <>
+      <button
+        type="button"
+        className="mb-3 rounded-lg border px-3 py-1.5 text-sm dark:border-zinc-700"
+        onClick={() =>
+          get()?.action(
+            insert(
+              '\n```mermaid\nflowchart TD\n  A[Idée] --> B[Développement]\n```\n',
+            ),
+          )
+        }
+      >
+        Insérer un diagramme Mermaid
+      </button>
+      <Milkdown />
+    </>
+  )
 }
 
 export default function MarkdownEditor(props: Props) {
