@@ -1,0 +1,78 @@
+import { zipSync, strToU8 } from "fflate";
+import initSqlJs from "sql.js";
+import { createRequire } from "node:module";
+import { HttpError } from "../../errors.js";
+import { TABLES, columns, type Snapshot, type Table, type Row, type Root } from "./data.js";
+import { markdown, pdf, slug } from "./documents.js";
+
+export type { Root } from "./data.js";
+export type Format = "md" | "pdf";
+const require = createRequire(import.meta.url);
+let sql: ReturnType<typeof initSqlJs> | undefined;
+const loadSql = () => sql ??= initSqlJs({ locateFile: () => require.resolve("sql.js/dist/sql-wasm.wasm") });
+const id = (row: Row) => String(row.id);
+const ordered = (rows: Row[]) => [...rows].sort((a, b) => Number(a.position) - Number(b.position) || String(a.created_at).localeCompare(String(b.created_at)) || id(a).localeCompare(id(b)));
+// UUID complet : collisions impossibles même si les titres sont identiques ou dangereux.
+const segment = (row: Row) => `${slug(String(row.label ?? row.name ?? row.title)).slice(0, 14)}--${BigInt(`0x${id(row).replace(/-/g, "")}`).toString(32).padStart(26, "0")}`;
+
+export function selectedChapters(snapshot: Snapshot, roots?: Root[]): { row: Row; path: string }[] {
+  const t = snapshot.tables;
+  if (roots) for (const root of roots) {
+    if (!t[root.level].some((r) => r.id === root.id)) throw new HttpError(404, "Sélection introuvable");
+  }
+  const selected = new Set(roots?.map((r) => `${r.level}:${r.id}`));
+  const has = (level: Root["level"], row: Row) => selected.has(`${level}:${id(row)}`);
+  const result: { row: Row; path: string }[] = [];
+  for (const y of ordered(t.years)) for (const s of ordered(t.semesters.filter((r) => r.year_id === y.id)))
+    for (const subject of ordered(t.subjects.filter((r) => r.semester_id === s.id)))
+      for (const chapter of ordered(t.chapters.filter((r) => r.subject_id === subject.id))) {
+        if (!roots || has("years", y) || has("semesters", s) || has("subjects", subject) || has("chapters", chapter)) {
+          result.push({ row: chapter, path: [y, s, subject, chapter].map(segment).join("/") });
+        }
+      }
+  return result;
+}
+
+export async function sqlite(snapshot: Snapshot): Promise<Buffer> {
+  const SQL = await loadSql();
+  const db = new SQL.Database();
+  try {
+    db.run("PRAGMA foreign_keys=ON; PRAGMA user_version=1; BEGIN;");
+    db.run("CREATE TABLE export_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+    db.run("INSERT INTO export_metadata VALUES (?, ?), (?, ?)", ["version", "1", "exported_at", snapshot.exported_at]);
+    for (const table of Object.keys(TABLES) as Table[]) {
+      db.run(`CREATE TABLE ${table} (${TABLES[table]}${table === "evaluation_chapters" ? ", PRIMARY KEY (evaluation_id, chapter_id)" : ""})`);
+      const keys = columns(table);
+      const statement = db.prepare(`INSERT INTO ${table} (${keys.join(",")}) VALUES (${keys.map(() => "?").join(",")})`);
+      try { for (const row of snapshot.tables[table]) statement.run(keys.map((k) => row[k] ?? null)); }
+      finally { statement.free(); }
+    }
+    if (db.exec("PRAGMA foreign_key_check").length) throw new Error("Relations incohérentes dans l'export");
+    db.run("COMMIT");
+    return Buffer.from(db.export());
+  } finally { db.close(); }
+}
+
+export async function archive(snapshot: Snapshot, formats: Format[], roots?: Root[], complete = false): Promise<Buffer> {
+  const chapters = selectedChapters(snapshot, roots);
+  if (formats.includes("pdf") && chapters.length > 200) throw new HttpError(413, "Maximum 200 chapitres par export PDF. Réduisez la sélection ou utilisez l'export .db.");
+  const files: Record<string, Uint8Array> = Object.create(null);
+  let size = 0;
+  const add = (path: string, value: Uint8Array) => {
+    size += value.byteLength;
+    if (size > 64 * 1024 * 1024) throw new HttpError(413, "Archive trop volumineuse (64 Mio avant compression). Réduisez la sélection ou utilisez l'export .db.");
+    files[path] = value;
+  };
+  for (const { row, path } of chapters) {
+    const chapter = { title: String(row.title), content_md: String(row.content_md) };
+    if (formats.includes("md")) add(`cours/${path}.md`, strToU8(markdown(chapter)));
+    if (formats.includes("pdf")) add(`cours/${path}.pdf`, await pdf(chapter));
+  }
+  add("manifest.json", strToU8(JSON.stringify({ version: 1, exported_at: snapshot.exported_at, complete,
+    formats, roots: roots?.map((root) => ({ ...root, label: snapshot.tables[root.level].find((r) => r.id === root.id)?.label ?? snapshot.tables[root.level].find((r) => r.id === root.id)?.name ?? snapshot.tables[root.level].find((r) => r.id === root.id)?.title })) ?? null, chapters: chapters.map(({ row, path }) => ({ id: row.id, path, title: row.title })),
+    omitted: ["password_hash", "token_hash"],
+  }, null, 2)));
+  if (complete) add("data.json", strToU8(JSON.stringify(snapshot, null, 2)));
+  add("LIRE-MOI.txt", strToU8("Export Studier v1\nLes fichiers de cours sont classés par année/semestre/matière.\nLes identifiants dans les noms évitent les collisions. Une sélection vide reste décrite dans le manifeste.\nL'export complet contient data.json : profil, cours, évaluations, liens, événements, abonnements et métadonnées des sessions.\nMots de passe et jetons de session exclus. Les URL des calendriers peuvent être privées : protégez cette archive.\nPDF : rendu textuel, titres, listes, code et tables en blocs. HTML et formules LaTeX restent en texte source ; images représentées par leur description et URL, sans téléchargement réseau.\nLa base .db proposée séparément est un instantané SQLite portable, pas un dump PostgreSQL ni une restauration automatique.\n"));
+  return Buffer.from(zipSync(files, { level: 6 }));
+}
