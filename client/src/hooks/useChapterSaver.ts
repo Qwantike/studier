@@ -8,6 +8,17 @@ export type SaveState = "saved" | "dirty" | "saving" | "error";
 
 // Sauvegardes en cours par chapitre : la page attend leur fin avant de recharger
 // un chapitre, pour ne jamais afficher une version plus ancienne que la dernière frappe.
+const exportFlushers = new Map<string, () => Promise<void>>();
+export async function flushForExport(chapterId?: string): Promise<void> {
+  if (chapterId) {
+    await exportFlushers.get(chapterId)?.();
+    await waitForSaves(chapterId);
+  } else {
+    await Promise.all([...exportFlushers.values()].map((flush) => flush()));
+    await Promise.all([...inflightByChapter.values()]);
+  }
+}
+
 const inflightByChapter = new Map<string, Promise<void>>();
 export const waitForSaves = (chapterId: string) => inflightByChapter.get(chapterId) ?? Promise.resolve();
 
@@ -73,8 +84,14 @@ export function useChapterSaver(chapterId: string, delay = 1000) {
         headers: { "Content-Type": "application/json" }, body: JSON.stringify(pending.current),
       });
     };
+    const exportFlush = async () => {
+      await flush();
+      if (hasPending()) throw new Error("Sauvegarde impossible. Réessayez avant d'exporter.");
+    };
+    exportFlushers.set(chapterId, exportFlush);
     window.addEventListener("beforeunload", onUnload);
     return () => {
+      if (exportFlushers.get(chapterId) === exportFlush) exportFlushers.delete(chapterId);
       window.removeEventListener("beforeunload", onUnload);
       void flush(); // navigation vers un autre chapitre : on n'abandonne rien
     };

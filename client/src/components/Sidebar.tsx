@@ -7,6 +7,8 @@ import ThemeToggle from "./ThemeToggle";
 import { TreeItem } from "./TreeItem";
 import { LEVELS, PALETTE, buildRows, countDescendants, type Row, type TreeCtx } from "./treeModel";
 import ImportMarkdownModal from "./ImportMarkdownModal";
+import Modal from "./Modal";
+import ExportPanel from "./ExportPanel";
 import UserMenu from "./UserMenu";
 
 export default function Sidebar({ onClose }: { onClose: () => void }) {
@@ -20,6 +22,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const location = useLocation();
   const rows = useMemo(() => (data ? buildRows(data) : []), [data]);
+  const [exportOpen, setExportOpen] = useState(false);
   const [importTarget, setImportTarget] = useState<Row | null>(null);
 
   const toggle = (id: string, force?: boolean) =>
@@ -132,7 +135,9 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
           {rows.map((r, i) => <TreeItem key={r.id} row={r} siblings={rows} index={i} depth={0} ctx={ctx} />)}
         </ul>
       </nav>
+      <button className="mx-3 mb-2 rounded-lg border px-3 py-2 text-left text-sm dark:border-zinc-700" onClick={() => setExportOpen(true)}>Exporter des cours…</button>
       <UserMenu />
+      {exportOpen && <Modal title="Exporter des cours" onClose={() => setExportOpen(false)}><ExportPanel complete={false} /></Modal>}
       {importTarget && (
         <ImportMarkdownModal
           subject={importTarget}

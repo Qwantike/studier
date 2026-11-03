@@ -29,7 +29,7 @@ const refresh = (): Promise<Refresh> =>
 
 // Wrapper fetch : lève une ApiError avec le message JSON renvoyé par l'API (status 0 = serveur injoignable).
 // Sur un 401 (JWT d'accès expiré), renouvelle la session une fois puis rejoue la requête.
-export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+export async function apiResponse(path: string, init?: RequestInit): Promise<Response> {
   let res = await send(path, init);
   if (res.status === 401 && !NO_REFRESH.includes(path)) {
     const outcome = await refresh();
@@ -40,6 +40,11 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
     throw new ApiError(res.status, body?.error?.message ?? `Erreur ${res.status}`);
   }
+  return res;
+}
+
+export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await apiResponse(path, init);
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }

@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from "react";
+import ExportPanel from "../components/ExportPanel";
 import { api } from "../api/client";
 import { useAuth, type AuthUser } from "../hooks/useAuth";
 
@@ -154,6 +155,10 @@ export default function ProfilePage() {
                     </button>
                     <Feedback state={all} />
                 </div>
+            </Section>
+
+            <Section title="Exporter mes données" description="Sélection de cours ou copie complète de votre compte.">
+                <ExportPanel />
             </Section>
 
             <Section title="Supprimer le compte" description="Supprime définitivement votre compte et toutes vos données." danger>

@@ -1,37 +1,29 @@
 import { Download } from "lucide-react";
 import { useState } from "react";
-import { api } from "../api/client";
-import type { Chapter } from "../api/types";
-import { waitForSaves } from "../hooks/useChapterSaver";
-import { downloadChapter } from "../lib/exportChapter";
+import { flushForExport } from "../hooks/useChapterSaver";
+import { downloadExport } from "../lib/downloadExport";
 
-// Exporte le chapitre en .md, réimportable par « Importer » dans la matière d'un autre compte.
-// On relit le chapitre sur le serveur (après les sauvegardes en cours) : la page ne garde que la version ouverte au départ.
 export default function ExportChapterButton({ chapterId }: { chapterId: string }) {
-    const [busy, setBusy] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    const onClick = async () => {
-        setBusy(true);
-        setError(null);
-        try {
-            await waitForSaves(chapterId);
-            downloadChapter(await api<Chapter>(`/chapters/${chapterId}`));
-        } catch (err) {
-            setError((err as Error).message);
-        } finally {
-            setBusy(false);
-        }
-    };
-
-    return (
-        <div className="flex items-center gap-2">
-            {error && <span role="alert" className="text-xs text-red-600 dark:text-red-400">{error}</span>}
-            <button
-                onClick={() => void onClick()} disabled={busy}
-                title="Exporter en Markdown (.md)" aria-label="Exporter le chapitre en Markdown"
-                className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white/80 px-2.5 py-1.5 text-sm text-zinc-600 shadow-sm backdrop-blur hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            ><Download size={15} /> Exporter</button>
-        </div>
-    );
+  const [busy, setBusy] = useState(false);
+  const [format, setFormat] = useState<"md" | "pdf">("md");
+  const [error, setError] = useState<string | null>(null);
+  const onClick = async () => {
+    setBusy(true); setError(null);
+    try {
+      await flushForExport(chapterId);
+      await downloadExport(`/exports/chapters/${chapterId}/${format}`);
+    } catch (err) { setError((err as Error).message); }
+    finally { setBusy(false); }
+  };
+  return <div className="flex flex-wrap items-center gap-2">
+    {error && <span role="alert" className="text-xs text-red-600 dark:text-red-400">{error}</span>}
+    <select aria-label="Format du chapitre" value={format} disabled={busy} onChange={(e) => setFormat(e.target.value as "md" | "pdf")}
+      className="rounded-lg border bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900">
+      <option value="md">Markdown</option><option value="pdf">PDF</option>
+    </select>
+    <button onClick={() => void onClick()} disabled={busy} aria-label={`Exporter le chapitre en ${format}`}
+      className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-sm disabled:opacity-60 dark:border-zinc-700">
+      <Download size={15} />{busy ? "Export…" : "Exporter"}
+    </button>
+  </div>;
 }
