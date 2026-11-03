@@ -12,6 +12,7 @@ import { calendarSourcesRouter } from "./routes/calendarSources.js";
 import { dashboardRouter } from "./routes/dashboard.js";
 import { calendarRouter } from "./routes/calendar.js";
 import { evaluationsRouter } from "./routes/evaluations.js";
+import { exportsRouter } from "./routes/exports.js";
 import { treeRouter } from "./routes/tree.js";
 
 export function createApp() {
@@ -27,6 +28,7 @@ export function createApp() {
   // Tout ce qui suit exige une session valide.
   app.use("/api", requireAuth);
   app.use(express.json({ limit: "5mb" })); // le contenu Markdown peut être volumineux
+  app.use("/api/exports", exportsRouter);
   app.use("/api", treeRouter);
   app.use("/api/years", yearsRouter);
   app.use("/api/semesters", semestersRouter);
