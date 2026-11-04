@@ -6,7 +6,9 @@ import {
 } from '../../../../shared/functionPlot.js'
 import sharp from 'sharp'
 import PDFDocument from 'pdfkit'
-import { marked, type Token, type Tokens } from 'marked'
+import { type Token, type Tokens } from 'marked'
+import { documentMarkdown } from './inlineFormatting.js'
+import { inlinePdf } from './inlinePdf.js'
 import type { Readable } from 'node:stream'
 import { fileURLToPath } from 'node:url'
 import { HttpError } from '../../errors.js'
@@ -76,27 +78,6 @@ export async function pdf(
       doc.registerFont('regular', font('DejaVuSans'))
       doc.registerFont('bold', font('DejaVuSans-Bold'))
       doc.registerFont('mono', font('DejaVuSansMono'))
-      const plain = (tokens: Token[] | undefined, fallback = ''): string =>
-        (tokens ?? [])
-          .map((token): string => {
-            if (token.type === 'image')
-              return `[Image : ${token.text}] (${token.href})`
-            if (token.type === 'link')
-              return `${plain(token.tokens, token.text)} (${token.href})`
-            if (
-              token.type === 'br' ||
-              (token.type === 'html' &&
-                /^<br\s*\/?\s*>$/i.test(token.raw.trim()))
-            )
-              return '\n'
-            if ('tokens' in token && Array.isArray(token.tokens))
-              return plain(
-                token.tokens,
-                'text' in token ? String(token.text) : '',
-              )
-            return 'text' in token ? String(token.text) : token.raw
-          })
-          .join('') || fallback
       const line = (text: string, size = 10, face = 'regular') => {
         doc
           .font(face)
@@ -133,28 +114,21 @@ export async function pdf(
           token.title || (/^\d+(?:\.\d+)?$/.test(token.text) ? '' : token.text)
         if (caption) line(caption, 9)
       }
-      const renderInline = (tokens: Token[] | undefined, fallback: string) => {
-        if (!tokens?.length) {
-          line(fallback)
-          return
-        }
-        let text = ''
-        const flush = () => {
-          if (text.trim()) line(text)
-          text = ''
-        }
-        const visit = (items: Token[]) => {
-          for (const token of items) {
-            if (token.type === 'image') {
-              flush()
-              renderImage(token as Tokens.Image)
-            } else if ('tokens' in token && Array.isArray(token.tokens))
-              visit(token.tokens)
-            else text += plain([token])
-          }
-        }
-        visit(tokens)
-        flush()
+      const renderInline = (
+        tokens: Token[] | undefined,
+        fallback: string,
+        size = 10,
+        face = 'regular',
+      ) => {
+        inlinePdf(
+          doc,
+          tokens?.length
+            ? tokens
+            : [{ type: 'text', raw: fallback, text: fallback }],
+          renderImage,
+          size,
+          face,
+        )
       }
       const renderPlot = (source: string) => {
         const config = parsePlot(source),
@@ -231,8 +205,9 @@ export async function pdf(
         for (const token of tokens) {
           switch (token.type) {
             case 'heading':
-              line(
-                plain(token.tokens, token.text),
+              renderInline(
+                token.tokens,
+                token.text,
                 Math.max(11, 24 - token.depth * 2),
                 'bold',
               )
@@ -266,18 +241,22 @@ export async function pdf(
               })
               break
             // Tables présentées en blocs par ligne pour éviter les colonnes tronquées.
-            case 'table':
-              line(
-                (token as Tokens.Table).header
-                  .map((c) => plain(c.tokens, c.text))
-                  .join(' | '),
+            case 'table': {
+              const cells = (row: Tokens.TableCell[]) =>
+                row.flatMap((cell, i): Token[] => [
+                  ...(i ? [{ type: 'text', raw: ' | ', text: ' | ' }] : []),
+                  ...cell.tokens,
+                ])
+              renderInline(
+                cells((token as Tokens.Table).header),
+                '',
                 10,
                 'bold',
               )
-              ;(token as Tokens.Table).rows.forEach((row) =>
-                line(row.map((c) => plain(c.tokens, c.text)).join(' | ')),
-              )
+              for (const row of (token as Tokens.Table).rows)
+                renderInline(cells(row), '')
               break
+            }
             case 'html':
               if (/^(?:\s*<br\s*\/?\s*>\s*)+$/i.test(token.raw))
                 doc.moveDown(0.3)
@@ -294,7 +273,7 @@ export async function pdf(
       }
       if (Buffer.byteLength(chapter.content_md) > 1024 * 1024)
         throw new HttpError(413, 'Chapitre trop volumineux pour le PDF (1 Mio)')
-      render(marked.lexer(markdown(chapter)))
+      render(documentMarkdown.lexer(markdown(chapter)))
       doc.end()
     } catch (err) {
       ;(doc as unknown as Readable).destroy()
