@@ -19,6 +19,7 @@ import { calendarRouter } from './routes/calendar.js'
 import { evaluationsRouter } from './routes/evaluations.js'
 import { exportsRouter } from './routes/exports.js'
 import { whiteboardsRouter } from './routes/whiteboards.js'
+import { noteImagesRouter } from './routes/noteImages.js'
 import { treeRouter } from './routes/tree.js'
 
 export function createApp() {
@@ -34,6 +35,7 @@ export function createApp() {
   // Tout ce qui suit exige une session valide.
   app.use('/api', requireAuth)
   app.use(express.json({ limit: '5mb' })) // le contenu Markdown peut être volumineux
+  app.use('/api', noteImagesRouter)
   app.use('/api/whiteboards', whiteboardsRouter)
   app.use('/api/exports', exportsRouter)
   app.use('/api', treeRouter)
