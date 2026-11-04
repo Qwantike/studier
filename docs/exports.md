@@ -53,8 +53,8 @@ copiées ; leurs URL restent dans le Markdown et dans les descriptions du PDF.
 PDF A4 textuel avec titres, paragraphes, listes, code monospacé, tables présentées
 en blocs et polices DejaVu embarquées (licence dans `server/assets/fonts`). Les
 accents français, de nombreux signes IPA et grecs sont pris en charge par ces
-polices. Ce n'est pas une reproduction exacte de l'éditeur : les styles inline
-sont aplatis, le HTML et les formules LaTeX restent en texte source ; les images importées sont incorporées et les courbes `plot` tracées. Les images
+polices. Ce n'est pas une reproduction exacte de l'éditeur : le gras, les couleurs de la palette et le surlignage sont conservés ;
+l’italique et le barré restent aplatis. Le HTML non reconnu et les formules LaTeX restent en texte source ; les images importées sont incorporées et les courbes `plot` tracées. Les images
 distantes restent décrites avec leur URL. Aucun navigateur, téléchargement d'image, appel
 externe ou exécution de HTML n'est nécessaire à la génération.
 
@@ -168,3 +168,5 @@ Le détail du format et de la sélection est décrit dans [le guide diagrammes](
 Les diagrammes Mermaid restent en source dans le PDF textuel.
 
 Les images et courbes `plot` sont détaillées dans [le guide images et fonctions](images-functions.md).
+
+La palette et le surlignage sont détaillés dans [le guide de mise en forme](text-formatting.md).

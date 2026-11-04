@@ -92,3 +92,10 @@ Le menu **+ → Advanced** propose **Image** (import privé) et **Fonctions**
 (tracé de `sin(x)`, `x^2`, etc., sans LaTeX). Les images et courbes sont incluses
 dans les exports. Appliquer la migration 007 après `npm ci`.
 Voir [le guide complet](docs/images-functions.md) pour les formats, quotas et exemples.
+
+### Couleurs et surlignage
+
+Sélectionner du texte pour afficher **Surligner** et la palette de six couleurs.
+Le raccourci Ctrl+Maj+H et la syntaxe `==texte==` activent le surlignage.
+Les couleurs sont adaptées au thème et conservées dans les exports.
+Voir [le guide de mise en forme](docs/text-formatting.md) pour la syntaxe et la portabilité.
