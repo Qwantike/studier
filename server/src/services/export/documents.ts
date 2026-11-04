@@ -1,3 +1,10 @@
+import {
+  parsePlot,
+  plotGeometry,
+  PLOT_WIDTH,
+  PLOT_HEIGHT,
+} from '../../../../shared/functionPlot.js'
+import sharp from 'sharp'
 import PDFDocument from 'pdfkit'
 import { marked, type Token, type Tokens } from 'marked'
 import type { Readable } from 'node:stream'
@@ -36,7 +43,17 @@ const font = (name: string) =>
 const MAX_PDF_BYTES = 16 * 1024 * 1024
 
 /** Rendu textuel sûr : aucun HTML exécuté, aucune requête réseau pour images/liens. */
-export function pdf(chapter: Chapter): Promise<Buffer> {
+export async function pdf(
+  chapter: Chapter,
+  images: ReadonlyMap<string, Buffer> = new Map(),
+): Promise<Buffer> {
+  const imageSizes = new Map<string, { width: number; height: number }>()
+  for (const [url, buffer] of images) {
+    if (!chapter.content_md.includes(url)) continue
+    const meta = await sharp(buffer).metadata()
+    if (meta.width && meta.height)
+      imageSizes.set(url, { width: meta.width, height: meta.height })
+  }
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size: 'A4',
@@ -66,7 +83,12 @@ export function pdf(chapter: Chapter): Promise<Buffer> {
               return `[Image : ${token.text}] (${token.href})`
             if (token.type === 'link')
               return `${plain(token.tokens, token.text)} (${token.href})`
-            if (token.type === 'br') return '\n'
+            if (
+              token.type === 'br' ||
+              (token.type === 'html' &&
+                /^<br\s*\/?\s*>$/i.test(token.raw.trim()))
+            )
+              return '\n'
             if ('tokens' in token && Array.isArray(token.tokens))
               return plain(
                 token.tokens,
@@ -83,6 +105,127 @@ export function pdf(chapter: Chapter): Promise<Buffer> {
           .text(text, { lineGap: 3 })
         doc.moveDown(0.5)
       }
+      const room = (height: number) => {
+        if (doc.y + height > doc.page.height - doc.page.margins.bottom)
+          doc.addPage()
+      }
+      const renderImage = (token: Tokens.Image) => {
+        const buffer = images.get(token.href)
+        if (!buffer) {
+          line(`[Image non incorporée : ${token.text}] (${token.href})`)
+          return
+        }
+        const dimensions = imageSizes.get(token.href)!
+        const scale = Math.min(
+          1,
+          (doc.page.width - 96) / dimensions.width,
+          320 / dimensions.height,
+        )
+        const width = dimensions.width * scale,
+          height = dimensions.height * scale
+        room(height + 30)
+        const y = doc.y
+        doc.image(buffer, doc.page.margins.left, y, { width, height })
+        doc.x = doc.page.margins.left
+        doc.y = y + height + 10
+        // Milkdown encode le ratio dans alt et la légende dans title.
+        const caption =
+          token.title || (/^\d+(?:\.\d+)?$/.test(token.text) ? '' : token.text)
+        if (caption) line(caption, 9)
+      }
+      const renderInline = (tokens: Token[] | undefined, fallback: string) => {
+        if (!tokens?.length) {
+          line(fallback)
+          return
+        }
+        let text = ''
+        const flush = () => {
+          if (text.trim()) line(text)
+          text = ''
+        }
+        const visit = (items: Token[]) => {
+          for (const token of items) {
+            if (token.type === 'image') {
+              flush()
+              renderImage(token as Tokens.Image)
+            } else if ('tokens' in token && Array.isArray(token.tokens))
+              visit(token.tokens)
+            else text += plain([token])
+          }
+        }
+        visit(tokens)
+        flush()
+      }
+      const renderPlot = (source: string) => {
+        const config = parsePlot(source),
+          g = plotGeometry(config)
+        const scale = (doc.page.width - 96) / PLOT_WIDTH
+        const height = PLOT_HEIGHT * scale
+        room(height + 12)
+        const y = doc.y
+        doc.save().translate(48, y).scale(scale)
+        doc.rect(0, 0, PLOT_WIDTH, PLOT_HEIGHT).fill('#ffffff')
+        const stroke = (
+          x1: number,
+          y1: number,
+          x2: number,
+          y2: number,
+          color: string,
+        ) => doc.moveTo(x1, y1).lineTo(x2, y2).lineWidth(0.7).stroke(color)
+        doc
+          .font('regular')
+          .fontSize(14)
+          .fillColor('#0f172a')
+          .text(config.title, 58, 10, { width: 560, lineBreak: false })
+        for (const t of g.xTicks) {
+          stroke(t.position, g.top, t.position, g.top + g.height, '#e2e8f0')
+          doc
+            .fontSize(10)
+            .fillColor('#475569')
+            .text(String(t.value), t.position - 20, 346, {
+              width: 40,
+              align: 'center',
+              lineBreak: false,
+            })
+        }
+        for (const t of g.yTicks) {
+          stroke(g.left, t.position, g.left + g.width, t.position, '#e2e8f0')
+          doc
+            .fontSize(10)
+            .fillColor('#475569')
+            .text(String(t.value), 0, t.position - 6, {
+              width: 50,
+              align: 'right',
+              lineBreak: false,
+            })
+        }
+        if (g.zeroX !== null)
+          stroke(g.zeroX, g.top, g.zeroX, g.top + g.height, '#64748b')
+        if (g.zeroY !== null)
+          stroke(g.left, g.zeroY, g.left + g.width, g.zeroY, '#64748b')
+        doc
+          .rect(g.left, g.top, g.width, g.height)
+          .lineWidth(0.7)
+          .stroke('#94a3b8')
+        for (const [i, curve] of g.curves.entries()) {
+          for (const points of curve.segments) {
+            if (points.length < 2) continue
+            doc.moveTo(points[0]![0], points[0]![1])
+            for (const p of points.slice(1)) doc.lineTo(p[0], p[1])
+            doc.lineWidth(1.8).stroke(curve.color)
+          }
+          doc
+            .fontSize(11)
+            .fillColor(curve.color)
+            .text(curve.expression, 58, 374 + i * 13, {
+              width: 560,
+              lineBreak: false,
+            })
+        }
+        doc.restore()
+        doc.x = 48
+        doc.y = y + height + 12
+      }
       const render = (tokens: Token[], depth = 0) => {
         if (depth > 30) throw new HttpError(413, 'Markdown trop imbriqué')
         for (const token of tokens) {
@@ -96,10 +239,20 @@ export function pdf(chapter: Chapter): Promise<Buffer> {
               break
             case 'paragraph':
             case 'text':
-              line(plain(token.tokens, token.text))
+              renderInline(token.tokens, token.text)
+              break
+            case 'image':
+              renderImage(token as Tokens.Image)
               break
             case 'code':
-              line(token.text, 9, 'mono')
+              if (token.lang?.trim().toLowerCase() === 'plot') {
+                try {
+                  renderPlot(token.text)
+                } catch {
+                  line('Bloc de fonctions invalide ; source conservée :')
+                  line(token.text, 9, 'mono')
+                }
+              } else line(token.text, 9, 'mono')
               break
             case 'blockquote':
               render(token.tokens ?? [], depth + 1)
@@ -107,8 +260,9 @@ export function pdf(chapter: Chapter): Promise<Buffer> {
             case 'list':
               ;(token as Tokens.List).items.forEach((item, i) => {
                 line(
-                  `${token.ordered ? `${Number(token.start) + i}.` : '•'} ${item.task ? (item.checked ? '[x] ' : '[ ] ') : ''}${plain(item.tokens, item.text)}`,
+                  `${token.ordered ? `${Number(token.start) + i}.` : '•'} ${item.task ? (item.checked ? '[x] ' : '[ ] ') : ''}`,
                 )
+                render(item.tokens, depth + 1)
               })
               break
             // Tables présentées en blocs par ligne pour éviter les colonnes tronquées.
@@ -125,7 +279,9 @@ export function pdf(chapter: Chapter): Promise<Buffer> {
               )
               break
             case 'html':
-              line(token.raw)
+              if (/^(?:\s*<br\s*\/?\s*>\s*)+$/i.test(token.raw))
+                doc.moveDown(0.3)
+              else line(token.raw)
               break // code source visible, jamais interprété
             case 'hr':
               line('────────────────────────────', 9)
