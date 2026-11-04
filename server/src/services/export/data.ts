@@ -1,3 +1,4 @@
+import { REVIEW_MODEL } from '../../../../shared/reviewModel.js'
 import { imageIds } from '../noteImages.js'
 import type { Pool } from 'pg'
 import { pool } from '../../db/pool.js'
@@ -12,7 +13,8 @@ export const TABLES = {
   years: `${identity}, label TEXT NOT NULL, position INTEGER NOT NULL, ${dates}`,
   semesters: `${identity}, year_id TEXT NOT NULL REFERENCES years(id), label TEXT NOT NULL, position INTEGER NOT NULL, ${dates}`,
   subjects: `${identity}, semester_id TEXT NOT NULL REFERENCES semesters(id), name TEXT NOT NULL, color TEXT NOT NULL, coefficient REAL, teacher TEXT, position INTEGER NOT NULL, ${dates}`,
-  chapters: `${identity}, subject_id TEXT NOT NULL REFERENCES subjects(id), title TEXT NOT NULL, content_md TEXT NOT NULL, status TEXT NOT NULL, position INTEGER NOT NULL, ${dates}`,
+  chapters: `${identity}, subject_id TEXT NOT NULL REFERENCES subjects(id), title TEXT NOT NULL, content_md TEXT NOT NULL, status TEXT NOT NULL, position INTEGER NOT NULL, review_started_at TEXT, initial_stability_days REAL, ${dates}`,
+  reviews: `${identity}, chapter_id TEXT NOT NULL REFERENCES chapters(id), reviewed_at TEXT NOT NULL, rating TEXT NOT NULL, stability_days REAL NOT NULL, ordinal INTEGER NOT NULL, model_version INTEGER NOT NULL`,
   evaluations: `${identity}, subject_id TEXT NOT NULL REFERENCES subjects(id), title TEXT NOT NULL, type TEXT NOT NULL, date TEXT NOT NULL, coefficient REAL, grade REAL, ${dates}`,
   evaluation_chapters:
     'evaluation_id TEXT NOT NULL REFERENCES evaluations(id), chapter_id TEXT NOT NULL REFERENCES chapters(id), user_id TEXT NOT NULL REFERENCES users(id)',
@@ -33,7 +35,8 @@ export type Row = Record<
   string | number | null | Record<string, unknown>
 >
 export interface Snapshot {
-  version: 3
+  version: 4
+  review_model: typeof REVIEW_MODEL
   exported_at: string
   tables: Record<Table, Row[]>
 }
@@ -130,7 +133,12 @@ export async function readSnapshot(
     }
     if (!tables.users.length) throw new HttpError(404, 'Compte introuvable')
     await client.query('COMMIT')
-    return { version: 3, exported_at: new Date().toISOString(), tables }
+    return {
+      version: 4,
+      review_model: REVIEW_MODEL,
+      exported_at: new Date().toISOString(),
+      tables,
+    }
   } catch (err) {
     await client.query('ROLLBACK')
     throw err

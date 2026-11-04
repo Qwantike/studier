@@ -82,15 +82,19 @@ export async function sqlite(snapshot: Snapshot): Promise<Buffer> {
   const SQL = await loadSql()
   const db = new SQL.Database()
   try {
-    db.run('PRAGMA foreign_keys=ON; PRAGMA user_version=3; BEGIN;')
+    db.run('PRAGMA foreign_keys=ON; PRAGMA user_version=4; BEGIN;')
     db.run(
       'CREATE TABLE export_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
     )
     db.run('INSERT INTO export_metadata VALUES (?, ?), (?, ?)', [
       'version',
-      '3',
+      '4',
       'exported_at',
       snapshot.exported_at,
+    ])
+    db.run('INSERT INTO export_metadata VALUES (?, ?)', [
+      'review_model',
+      JSON.stringify(snapshot.review_model),
     ])
     for (const table of Object.keys(TABLES) as Table[]) {
       db.run(
@@ -201,7 +205,7 @@ export async function archive(
     strToU8(
       JSON.stringify(
         {
-          version: 3,
+          version: 4,
           exported_at: snapshot.exported_at,
           complete,
           formats,
@@ -245,7 +249,7 @@ export async function archive(
   add(
     'LIRE-MOI.txt',
     strToU8(
-      "Export Studier v3\nLes fichiers de cours sont classés par année/semestre/matière.\nLes identifiants dans les noms évitent les collisions. Une sélection vide reste décrite dans le manifeste.\nL'export complet contient data.json : profil, cours, tableaux blancs, évaluations, liens, événements, abonnements et métadonnées des sessions. Les scènes sont aussi dans tableaux/*.excalidraw. Les images sont dans images/, avec liens relatifs dans le Markdown. Les blocs plot conservent leur source et ont un aperçu SVG dans graphiques/. Les blocs Mermaid restent en source dans le MD et le PDF textuel.\nMots de passe et jetons de session exclus. Les URL des calendriers peuvent être privées : protégez cette archive.\nPDF : rendu textuel, titres, listes, code et tables en blocs. Couleurs de la palette et surlignage rendus ; autre HTML et formules LaTeX restent en texte source ; images importées incorporées, courbes plot tracées. Aucune image distante téléchargée.\nLa base .db proposée séparément est un instantané SQLite portable, pas un dump PostgreSQL ni une restauration automatique.\n",
+      "Export Studier v4\nLes fichiers de cours sont classés par année/semestre/matière.\nLes identifiants dans les noms évitent les collisions. Une sélection vide reste décrite dans le manifeste.\nL'export complet contient data.json : profil, cours, historique des révisions et paramètres du modèle estimatif, tableaux blancs, évaluations, liens, événements, abonnements et métadonnées des sessions. Les scènes sont aussi dans tableaux/*.excalidraw. Les images sont dans images/, avec liens relatifs dans le Markdown. Les blocs plot conservent leur source et ont un aperçu SVG dans graphiques/. Les blocs Mermaid restent en source dans le MD et le PDF textuel.\nMots de passe et jetons de session exclus. Les URL des calendriers peuvent être privées : protégez cette archive.\nPDF : rendu textuel, titres, listes, code et tables en blocs. Couleurs de la palette et surlignage rendus ; autre HTML et formules LaTeX restent en texte source ; images importées incorporées, courbes plot tracées. Aucune image distante téléchargée.\nLa base .db proposée séparément est un instantané SQLite portable, pas un dump PostgreSQL ni une restauration automatique.\n",
     ),
   )
   return Buffer.from(zipSync(files, { level: 6 }))

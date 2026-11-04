@@ -341,7 +341,7 @@ describe('quotas appliqués en base', () => {
 describe('exports des tableaux', () => {
   it('inclut les scènes complètes dans JSON, ZIP et SQLite sans fuite', async () => {
     const data = await readSnapshot(A.id)
-    expect(data.version).toBe(3)
+    expect(data.version).toBe(4)
     expect(data.tables.whiteboards.some((b) => b.id === board)).toBe(true)
     expect(JSON.stringify(data.tables.whiteboards)).not.toContain('SECRET-B')
     const zip = unzipSync(await archive(data, ['md'], undefined, true))
@@ -358,7 +358,7 @@ describe('exports des tableaux', () => {
       expect(JSON.parse(String(rows.values[0]![0])).elements[0].type).toBe(
         'rectangle',
       )
-      expect(db.exec('PRAGMA user_version')[0]!.values).toEqual([[3]])
+      expect(db.exec('PRAGMA user_version')[0]!.values).toEqual([[4]])
     } finally {
       db.close()
     }
