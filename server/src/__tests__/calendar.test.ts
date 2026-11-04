@@ -21,11 +21,9 @@ import {
 } from './helpers.js'
 
 let ics: IcsServer
-let U: TestUser
 
 beforeAll(async () => {
   ics = await startIcsServer()
-  U = await newUser('cal')
 })
 afterAll(async () => {
   await ics.close()

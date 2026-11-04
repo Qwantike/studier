@@ -2,3 +2,6 @@ node_modules
 dist
 .env
 *.log
+
+# Polices Excalidraw copiées depuis le paquet avant dev/build
+client/public/excalidraw/

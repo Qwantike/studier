@@ -101,6 +101,7 @@ export default function ChapterEditor({ chapter }: { chapter: Chapter }) {
 
       <div className="mt-8">
         <MarkdownEditor
+          chapterId={chapter.id}
           initial={chapter.content_md}
           onChange={(md) => queue({ content_md: md })}
         />

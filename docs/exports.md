@@ -24,7 +24,7 @@ ne produit pas de PDF vide. Les structures sans chapitre ne deviennent pas des
 fichiers de cours.
 
 ZIP complet : mêmes fichiers de cours, tous en MD **et** PDF, plus `data.json`.
-Ce JSON est l'instantané relationnel complet, versionné (`version: 1`), avec :
+Ce JSON est l'instantané relationnel complet, versionné (`version: 3`), avec :
 
 - profil et dates du compte ;
 - années, semestres, matières, chapitres (contenu, statut, position et dates) ;
@@ -36,7 +36,7 @@ Le `.db` est une **vraie base SQLite autonome**, et non du JSON renommé ou un
 fichier PostgreSQL. Il contient les mêmes tables et données que `data.json`,
 les clés primaires/étrangères, et une table `export_metadata`. UUID et dates ISO
 sont en TEXT, notes et coefficients en REAL, positions/compteurs en INTEGER.
-`PRAGMA user_version` vaut 1. Il s'ouvre dans un client SQLite ; un fournisseur
+`PRAGMA user_version` vaut 3. Il s'ouvre dans un client SQLite ; un fournisseur
 cible devra mapper ce schéma vers son propre modèle. Il ne s'agit pas d'un dump
 PostgreSQL et il n'existe pas encore de restauration automatique dans Studier.
 Les fonctions, index et triggers internes de PostgreSQL ne sont pas exportés.
@@ -53,9 +53,9 @@ copiées ; leurs URL restent dans le Markdown et dans les descriptions du PDF.
 PDF A4 textuel avec titres, paragraphes, listes, code monospacé, tables présentées
 en blocs et polices DejaVu embarquées (licence dans `server/assets/fonts`). Les
 accents français, de nombreux signes IPA et grecs sont pris en charge par ces
-polices. Ce n'est pas une reproduction exacte de l'éditeur : les styles inline
-sont aplatis, le HTML et les formules LaTeX restent en texte source ; les images
-sont décrites avec leur URL. Aucun navigateur, téléchargement d'image, appel
+polices. Ce n'est pas une reproduction exacte de l'éditeur : le gras, les couleurs de la palette et le surlignage sont conservés ;
+l’italique et le barré restent aplatis. Le HTML non reconnu et les formules LaTeX restent en texte source ; les images importées sont incorporées et les courbes `plot` tracées. Les images
+distantes restent décrites avec leur URL. Aucun navigateur, téléchargement d'image, appel
 externe ou exécution de HTML n'est nécessaire à la génération.
 
 ## API
@@ -93,16 +93,16 @@ Cette version génère les fichiers en mémoire. Les limites évitent de saturer
 processus et ne tronquent jamais silencieusement les données :
 
 - maximum 5 000 racines sélectionnées ;
-- maximum 50 000 lignes par table, 100 000 lignes et 32 Mio de JSON de données au total ;
+- maximum 50 000 lignes par table, 100 000 lignes et 128 Mio de JSON de données au total ;
 - maximum 1 Mio de Markdown par chapitre pour le PDF ;
 - maximum 200 chapitres dès qu'un ZIP contient du PDF, y compris un ZIP complet ;
-- maximum 16 Mio par PDF et 64 Mio de fichiers avant compression ZIP ;
+- maximum 16 Mio par PDF et 256 Mio de fichiers avant compression ZIP ;
 - un export à la fois par utilisateur, deux par processus serveur ;
 - 15 secondes maximum par requête SQL.
 
 Un dépassement de volume renvoie 413, une génération déjà en cours 429. Pour un
 compte de plus de 200 chapitres, utiliser le `.db` pour l'ensemble des données et
-des ZIP PDF par sélections. Le `.db` reste soumis à la limite de données de 32 Mio.
+des ZIP PDF par sélections. Le `.db` reste soumis à la limite de données de 128 Mio.
 La concurrence est limitée par processus, pas par un verrou distribué. Pour des
 volumes supérieurs, prévoir des tâches asynchrones et un stockage temporaire avec
 génération en flux ; cette série ne fournit pas cette infrastructure.
@@ -118,7 +118,7 @@ npm run build -w client
 npm run dev
 ```
 
-Aucune nouvelle migration. PostgreSQL et les migrations existantes doivent déjà
+La migration 007 est requise pour les images. PostgreSQL et les migrations existantes doivent déjà
 être prêts. Les tests serveur utilisent **TEST_DATABASE_URL** et réinitialisent
 cette base : utiliser une base isolée dont le nom contient `test`, distincte de
 DATABASE_URL, conformément au dispositif déjà présent.
@@ -160,3 +160,13 @@ SELECT * FROM evaluation_chapters;
   blocage sur échec de sauvegarde, attente d'un envoi déjà en cours.
 - Un PDF d'exemple a été rendu puis inspecté visuellement, et son texte extrait.
 - Pas de validation de l'interface dans un navigateur dans cet environnement.
+
+## Tableaux blancs et images (format v3)
+
+Les exports comprennent désormais la table whiteboards et les scènes .excalidraw.
+Le détail du format et de la sélection est décrit dans [le guide diagrammes](diagrams-whiteboards.md).
+Les diagrammes Mermaid restent en source dans le PDF textuel.
+
+Les images et courbes `plot` sont détaillées dans [le guide images et fonctions](images-functions.md).
+
+La palette et le surlignage sont détaillés dans [le guide de mise en forme](text-formatting.md).

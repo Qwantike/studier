@@ -1,3 +1,4 @@
+import { imageIds } from '../noteImages.js'
 import type { Pool } from 'pg'
 import { pool } from '../../db/pool.js'
 import { HttpError } from '../../errors.js'
@@ -17,6 +18,8 @@ export const TABLES = {
     'evaluation_id TEXT NOT NULL REFERENCES evaluations(id), chapter_id TEXT NOT NULL REFERENCES chapters(id), user_id TEXT NOT NULL REFERENCES users(id)',
   calendar_sources: `${identity}, name TEXT NOT NULL, url TEXT NOT NULL, last_synced_at TEXT, last_error TEXT, ${dates}, next_sync_at TEXT NOT NULL, failures INTEGER NOT NULL`,
   calendar_events: `${identity}, title TEXT NOT NULL, starts_at TEXT NOT NULL, ends_at TEXT NOT NULL, location TEXT, subject_id TEXT REFERENCES subjects(id), ics_uid TEXT, ${dates}, source_id TEXT REFERENCES calendar_sources(id)`,
+  whiteboards: `${identity}, subject_id TEXT REFERENCES subjects(id), chapter_id TEXT REFERENCES chapters(id), title TEXT NOT NULL, scene TEXT NOT NULL, scene_bytes INTEGER NOT NULL, revision INTEGER NOT NULL, ${dates}`,
+  note_images: `${identity}, original_name TEXT NOT NULL, mime_type TEXT NOT NULL, width INTEGER NOT NULL, height INTEGER NOT NULL, data_base64 TEXT NOT NULL, byte_size INTEGER NOT NULL, created_at TEXT NOT NULL`,
   sessions:
     'id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), user_agent TEXT, ip TEXT, expires_at TEXT NOT NULL, last_used_at TEXT NOT NULL, created_at TEXT NOT NULL',
 } as const
@@ -25,15 +28,18 @@ export type Root = {
   id: string
 }
 export type Table = keyof typeof TABLES
-export type Row = Record<string, string | number | null>
+export type Row = Record<
+  string,
+  string | number | null | Record<string, unknown>
+>
 export interface Snapshot {
-  version: 1
+  version: 3
   exported_at: string
   tables: Record<Table, Row[]>
 }
 export const columns = (table: Table) =>
   TABLES[table].split(', ').map((c) => c.split(' ')[0]!)
-export const MAX_DATA_BYTES = 32 * 1024 * 1024
+export const MAX_DATA_BYTES = 128 * 1024 * 1024
 
 /** Une seule transaction : toutes les tables représentent le même instant. */
 export async function readSnapshot(
@@ -51,7 +57,15 @@ export async function readSnapshot(
     for (const table of Object.keys(TABLES) as Table[]) {
       if (
         roots &&
-        !['users', 'years', 'semesters', 'subjects', 'chapters'].includes(table)
+        ![
+          'users',
+          'years',
+          'semesters',
+          'subjects',
+          'chapters',
+          'whiteboards',
+          'note_images',
+        ].includes(table)
       ) {
         tables[table] = []
         continue
@@ -68,6 +82,35 @@ export async function readSnapshot(
           OR subject_id IN (SELECT su.id FROM subjects su JOIN semesters se ON se.id = su.semester_id AND se.user_id = su.user_id
             WHERE su.user_id = $1 AND (se.id = ANY($4::uuid[]) OR se.year_id = ANY($5::uuid[]))))`
       }
+      if (roots && table === 'whiteboards') {
+        const subjectIds = tables.subjects
+          .filter((su) =>
+            roots.some((root) => {
+              if (root.level === 'subjects') return root.id === su.id
+              if (root.level === 'semesters') return root.id === su.semester_id
+              if (root.level === 'years')
+                return tables.semesters.some(
+                  (se) => se.id === su.semester_id && se.year_id === root.id,
+                )
+              return false
+            }),
+          )
+          .map((su) => su.id)
+        args.push(
+          tables.chapters.map((c) => c.id),
+          subjectIds,
+        )
+        filter =
+          ' AND (chapter_id = ANY($2::uuid[]) OR subject_id = ANY($3::uuid[]))'
+      }
+      if (roots && table === 'note_images') {
+        args.push([
+          ...new Set(
+            tables.chapters.flatMap((c) => imageIds(String(c.content_md))),
+          ),
+        ])
+        filter = ' AND id = ANY($2::uuid[])'
+      }
       const order =
         table === 'evaluation_chapters' ? 'evaluation_id, chapter_id' : 'id'
       const { rows } = await client.query(
@@ -81,17 +124,27 @@ export async function readSnapshot(
       if (rows.length > 50000 || count > 100000 || bytes > MAX_DATA_BYTES) {
         throw new HttpError(
           413,
-          "Export trop volumineux (100 000 lignes / 32 Mio). Exportez des sélections plus petites ou contactez l'administrateur.",
+          "Export trop volumineux (100 000 lignes / 128 Mio). Exportez des sélections plus petites ou contactez l'administrateur.",
         )
       }
     }
     if (!tables.users.length) throw new HttpError(404, 'Compte introuvable')
     await client.query('COMMIT')
-    return { version: 1, exported_at: new Date().toISOString(), tables }
+    return { version: 3, exported_at: new Date().toISOString(), tables }
   } catch (err) {
     await client.query('ROLLBACK')
     throw err
   } finally {
     client.release()
   }
+}
+
+/** Uniquement les images possédées incluses dans l'instantané. Jamais d'accès réseau. */
+export function imageBuffers(snapshot: Snapshot): Map<string, Buffer> {
+  return new Map(
+    snapshot.tables.note_images.map((image) => [
+      `/api/note-images/${image.id}`,
+      Buffer.from(String(image.data_base64), 'base64'),
+    ]),
+  )
 }

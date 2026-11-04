@@ -43,7 +43,15 @@ export default function ChapterPage() {
       {/* Bouton fixé en haut à droite de la zone de contenu, au-dessus de l'éditeur. */}
       <div className="pointer-events-none sticky top-0 z-10 flex h-0 justify-end px-3 pt-3">
         <div className="pointer-events-auto">
-          <ExportChapterButton chapterId={data.id} />
+          <div className="flex max-w-full flex-wrap items-center justify-end gap-2">
+            <Link
+              className="rounded-lg border bg-white px-2 py-1.5 text-sm dark:bg-zinc-900 dark:border-zinc-700"
+              to={`/tableaux?chapter_id=${data.id}`}
+            >
+              Tableaux blancs
+            </Link>
+            <ExportChapterButton chapterId={data.id} />
+          </div>
         </div>
       </div>
       <ChapterEditor key={data.id} chapter={data} />

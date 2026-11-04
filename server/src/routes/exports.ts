@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { HttpError } from '../errors.js'
 import { uid } from '../middleware/auth.js'
-import { readSnapshot } from '../services/export/data.js'
+import { readSnapshot, imageBuffers } from '../services/export/data.js'
 import { archive, sqlite } from '../services/export/archive.js'
 import { markdown, pdf, slug } from '../services/export/documents.js'
 
@@ -67,7 +67,9 @@ exportsRouter.get('/chapters/:id/:format', async (req, res, next) => {
       content_md: String(row.content_md),
     }
     const result =
-      format === 'md' ? Buffer.from(markdown(chapter)) : await pdf(chapter)
+      format === 'md'
+        ? Buffer.from(markdown(chapter))
+        : await pdf(chapter, imageBuffers(data))
     headers(
       res,
       `${slug(chapter.title)}.${format}`,

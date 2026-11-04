@@ -9,7 +9,7 @@ import {
   Upload,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, Link } from 'react-router-dom'
 import { STATUS_DOT, STATUS_LABELS } from '../api/types'
 import { LEVELS, type Row, type TreeCtx } from './treeModel'
 
@@ -56,12 +56,11 @@ function ColorDot({
   onChange: (c: string) => void
 }) {
   const [v, setV] = useState(color)
-  useEffect(() => setV(color), [color])
   useEffect(() => {
     if (v === color) return
     const t = setTimeout(() => onChange(v), 500)
     return () => clearTimeout(t)
-  }, [v]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [v, color, onChange])
   return (
     <label
       className="relative flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center"
@@ -146,7 +145,11 @@ export function TreeItem({ row, siblings, index, depth, ctx }: Props) {
         )}
 
         {row.level === 'subjects' && row.color && (
-          <ColorDot color={row.color} onChange={(c) => ctx.recolor(row, c)} />
+          <ColorDot
+            key={row.color}
+            color={row.color}
+            onChange={(c) => ctx.recolor(row, c)}
+          />
         )}
         {row.level === 'chapters' && row.status && (
           <span
@@ -202,6 +205,15 @@ export function TreeItem({ row, siblings, index, depth, ctx }: Props) {
               onClick={() => ctx.setMenuId(null)}
             />
             <div className="absolute right-1 top-full z-30 mt-1 w-40 rounded-lg border border-zinc-200 bg-white p-1 shadow-md dark:border-zinc-700 dark:bg-zinc-900">
+              {(row.level === 'subjects' || row.level === 'chapters') && (
+                <Link
+                  className={menuItem}
+                  to={`/tableaux?${row.level === 'subjects' ? 'subject_id' : 'chapter_id'}=${row.id}`}
+                  onClick={() => ctx.setMenuId(null)}
+                >
+                  Tableaux blancs
+                </Link>
+              )}
               <button
                 className={menuItem}
                 onClick={() => {

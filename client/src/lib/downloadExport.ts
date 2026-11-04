@@ -1,3 +1,4 @@
+import { flushWhiteboards } from '../hooks/useWhiteboardSaver'
 import { apiResponse } from '../api/client'
 
 /** Même renouvellement de session et mêmes erreurs que les appels JSON. */
@@ -5,6 +6,7 @@ export async function downloadExport(
   path: string,
   body?: unknown,
 ): Promise<void> {
+  await flushWhiteboards()
   const response = await apiResponse(
     path,
     body === undefined

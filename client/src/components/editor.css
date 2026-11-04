@@ -47,3 +47,126 @@
   --crepe-color-inline-code: #fda4af;
   --crepe-color-error: #f87171;
 }
+
+/* Le surlignage conserve un contraste lisible dans les deux thèmes. */
+.chapter-editor .milkdown mark.note-highlight {
+  background: #fef08a;
+  color: #422006;
+  padding: 0.05em 0;
+  border-radius: 0.15em;
+  box-decoration-break: clone;
+}
+/* Les couleurs imbriquées dans un mark restent sur la palette sombre sur clair. */
+
+.chapter-editor .milkdown [data-note-color='red'] {
+  color: #b91c1c;
+}
+.dark .chapter-editor .milkdown [data-note-color='red'] {
+  color: #fca5a5;
+}
+.chapter-editor .milkdown .note-color-swatch[data-note-color='red'] {
+  fill: #b91c1c;
+}
+.dark .chapter-editor .milkdown .note-color-swatch[data-note-color='red'] {
+  fill: #fca5a5;
+}
+.dark .chapter-editor .milkdown mark.note-highlight [data-note-color='red'],
+.dark .chapter-editor .milkdown [data-note-color='red'] mark.note-highlight {
+  color: #b91c1c;
+}
+
+.chapter-editor .milkdown [data-note-color='orange'] {
+  color: #9a3412;
+}
+.dark .chapter-editor .milkdown [data-note-color='orange'] {
+  color: #fdba74;
+}
+.chapter-editor .milkdown .note-color-swatch[data-note-color='orange'] {
+  fill: #9a3412;
+}
+.dark .chapter-editor .milkdown .note-color-swatch[data-note-color='orange'] {
+  fill: #fdba74;
+}
+.dark .chapter-editor .milkdown mark.note-highlight [data-note-color='orange'],
+.dark .chapter-editor .milkdown [data-note-color='orange'] mark.note-highlight {
+  color: #9a3412;
+}
+
+.chapter-editor .milkdown [data-note-color='green'] {
+  color: #047857;
+}
+.dark .chapter-editor .milkdown [data-note-color='green'] {
+  color: #6ee7b7;
+}
+.chapter-editor .milkdown .note-color-swatch[data-note-color='green'] {
+  fill: #047857;
+}
+.dark .chapter-editor .milkdown .note-color-swatch[data-note-color='green'] {
+  fill: #6ee7b7;
+}
+.dark .chapter-editor .milkdown mark.note-highlight [data-note-color='green'],
+.dark .chapter-editor .milkdown [data-note-color='green'] mark.note-highlight {
+  color: #047857;
+}
+
+.chapter-editor .milkdown [data-note-color='blue'] {
+  color: #1d4ed8;
+}
+.dark .chapter-editor .milkdown [data-note-color='blue'] {
+  color: #93c5fd;
+}
+.chapter-editor .milkdown .note-color-swatch[data-note-color='blue'] {
+  fill: #1d4ed8;
+}
+.dark .chapter-editor .milkdown .note-color-swatch[data-note-color='blue'] {
+  fill: #93c5fd;
+}
+.dark .chapter-editor .milkdown mark.note-highlight [data-note-color='blue'],
+.dark .chapter-editor .milkdown [data-note-color='blue'] mark.note-highlight {
+  color: #1d4ed8;
+}
+
+.chapter-editor .milkdown [data-note-color='purple'] {
+  color: #7e22ce;
+}
+.dark .chapter-editor .milkdown [data-note-color='purple'] {
+  color: #d8b4fe;
+}
+.chapter-editor .milkdown .note-color-swatch[data-note-color='purple'] {
+  fill: #7e22ce;
+}
+.dark .chapter-editor .milkdown .note-color-swatch[data-note-color='purple'] {
+  fill: #d8b4fe;
+}
+.dark .chapter-editor .milkdown mark.note-highlight [data-note-color='purple'],
+.dark .chapter-editor .milkdown [data-note-color='purple'] mark.note-highlight {
+  color: #7e22ce;
+}
+
+.chapter-editor .milkdown [data-note-color='pink'] {
+  color: #be185d;
+}
+.dark .chapter-editor .milkdown [data-note-color='pink'] {
+  color: #f9a8d4;
+}
+.chapter-editor .milkdown .note-color-swatch[data-note-color='pink'] {
+  fill: #be185d;
+}
+.dark .chapter-editor .milkdown .note-color-swatch[data-note-color='pink'] {
+  fill: #f9a8d4;
+}
+.dark .chapter-editor .milkdown mark.note-highlight [data-note-color='pink'],
+.dark .chapter-editor .milkdown [data-note-color='pink'] mark.note-highlight {
+  color: #be185d;
+}
+
+/* La palette reste accessible sans débordement sur mobile. */
+.chapter-editor .milkdown-toolbar {
+  flex-wrap: wrap;
+  max-width: min(680px, calc(100vw - 24px));
+}
+
+.chapter-editor .milkdown .ProseMirror ::selection {
+  background: #4338ca;
+  color: #fff;
+}

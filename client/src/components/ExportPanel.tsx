@@ -152,9 +152,9 @@ export default function ExportPanel({
         </div>
       )}
       <p className="text-xs text-zinc-500">
-        PDF : 200 chapitres maximum par archive. Images et formules conservées
-        sous forme textuelle. Utilisez .db pour les exports complets plus
-        volumineux.
+        PDF : 200 chapitres maximum par archive. Images importées et courbes
+        incorporées ; formules LaTeX et Mermaid conservés en source. Utilisez
+        .db pour les exports complets plus volumineux.
       </p>
       {busy && (
         <p role="status" className="text-sm">

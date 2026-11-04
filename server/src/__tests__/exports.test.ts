@@ -26,7 +26,7 @@ const post = async (u: TestUser, path: string, body: object) =>
   expectStatus(await u.agent.post(`/api/${path}`).send(body), 201).body
     .id as string
 const binary = (
-  response: any,
+  response: request.Response,
   callback: (error: Error | null, body: Buffer) => void,
 ) => {
   const chunks: Buffer[] = []
@@ -48,7 +48,7 @@ beforeAll(async () => {
     subject_id: subject,
     title: '../../Été : cerveau',
     content_md:
-      '## Mémoire\n\nContenu privé A : œ, α, →\n\n- synapse\n\n```ts\nconst x = 2;\n```\n\n| Test | Note |\n|---|---|\n| A | 15 |',
+      '## Mémoire\n\nContenu privé A : œ, α, →\n\n- synapse\n\n```ts\nconst x = 2;\n```\n\n| Test | Note |\n|---|---|\n| A | 15 |\n\n==À retenir== et <span data-note-color="red" style="color: #b91c1c">Rouge</span>',
   })
   second = await post(A, 'chapters', {
     subject_id: subject,
@@ -140,13 +140,11 @@ describe('sélections et isolation', () => {
         404,
       )
     expectStatus(
-      await A.agent
-        .post('/api/exports')
-        .send({
-          kind: 'selection',
-          formats: ['md'],
-          roots: [{ level: 'chapters', id: foreign }],
-        }),
+      await A.agent.post('/api/exports').send({
+        kind: 'selection',
+        formats: ['md'],
+        roots: [{ level: 'chapters', id: foreign }],
+      }),
       404,
     )
   })
@@ -213,6 +211,12 @@ describe('sélections et isolation', () => {
         .map(([, v]) => strFromU8(v))
         .join('\n'),
     ).not.toContain('SECRET-B')
+    const markdownText = Object.entries(files)
+      .filter(([name]) => name.endsWith('.md'))
+      .map(([, value]) => strFromU8(value))
+      .join('\n')
+    expect(markdownText).toContain('==À retenir==')
+    expect(markdownText).toContain('data-note-color="red"')
     expect(files['data.json']).toBeUndefined()
   })
   it('une année vide produit une archive valide avec manifeste', async () => {
@@ -292,6 +296,11 @@ describe('portabilité complète', () => {
     const text = strFromU8(files['data.json']!)
     const data = JSON.parse(text)
     expect(data.tables.users[0].email).toBe(A.email.toLowerCase())
+    expect(
+      data.tables.chapters.find(
+        (chapter: { id: string }) => chapter.id === first,
+      ).content_md,
+    ).toContain('==À retenir==')
     expect(data.tables.evaluations[0].grade).toBe(15.5)
     expect(data.tables.evaluation_chapters).toHaveLength(2)
     expect(data.tables.calendar_events).toHaveLength(1)
@@ -328,6 +337,9 @@ describe('portabilité complète', () => {
           "SELECT content_md FROM chapters WHERE id = '" + first + "'",
         )[0]!.values[0]![0],
       ).toContain('œ, α, →')
+      expect(
+        db.exec('SELECT content_md FROM chapters')[0]!.values.flat().join('\n'),
+      ).toContain('==À retenir==')
       expect(db.exec('SELECT count(*) FROM users')[0]!.values).toEqual([[1]])
       expect(
         db.exec('PRAGMA table_info(users)')[0]!.values.flat(),

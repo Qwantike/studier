@@ -14,16 +14,18 @@ export const notFound: RequestHandler = (req, _res, next) =>
   next(new HttpError(404, `Route introuvable : ${req.method} ${req.path}`))
 
 // Format d'erreur unique : { error: { message, details? } }
-export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+export const errorHandler: ErrorRequestHandler = (err, _req, res, next) => {
+  if (res.headersSent) {
+    next(err)
+    return
+  }
   if (err instanceof ZodError) {
-    res
-      .status(400)
-      .json({
-        error: {
-          message: 'Données invalides',
-          details: err.flatten().fieldErrors,
-        },
-      })
+    res.status(400).json({
+      error: {
+        message: 'Données invalides',
+        details: err.flatten().fieldErrors,
+      },
+    })
     return
   }
   if (err instanceof HttpError) {
