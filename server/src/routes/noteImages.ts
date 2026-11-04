@@ -57,14 +57,12 @@ noteImagesRouter.get(
       'SELECT COALESCE(sum(byte_size),0)::integer AS bytes,count(*)::integer AS count FROM note_images WHERE user_id=$1',
       [uid(req)],
     )
-    res
-      .set('Cache-Control', 'no-store')
-      .json({
-        ...rows[0],
-        image_limit: IMAGE_LIMIT,
-        account_limit: IMAGE_ACCOUNT_LIMIT,
-        count_limit: IMAGE_COUNT_LIMIT,
-      })
+    res.set('Cache-Control', 'no-store').json({
+      ...rows[0],
+      image_limit: IMAGE_LIMIT,
+      account_limit: IMAGE_ACCOUNT_LIMIT,
+      count_limit: IMAGE_COUNT_LIMIT,
+    })
   }),
 )
 noteImagesRouter.post(

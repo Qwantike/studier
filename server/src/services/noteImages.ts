@@ -14,14 +14,12 @@ export async function normalizeImage(input: Buffer) {
     const metadata = await source.metadata()
     if (!['png', 'jpeg', 'webp', 'gif'].includes(metadata.format ?? ''))
       throw new HttpError(400, 'Choisissez une image PNG, JPEG, WebP ou GIF.')
-    const resized = source
-      .rotate()
-      .resize({
-        width: 2560,
-        height: 2560,
-        fit: 'inside',
-        withoutEnlargement: true,
-      })
+    const resized = source.rotate().resize({
+      width: 2560,
+      height: 2560,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
     const { data, info } = await (
       metadata.format === 'jpeg'
         ? resized.jpeg({ quality: 90 })
