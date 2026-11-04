@@ -14,7 +14,8 @@
     "format:check": "prettier . --check",
     "format:write": "prettier . --write",
     "lint": "eslint .",
-    "lint:fix": "npx eslint . --fix"
+    "lint:fix": "npx eslint . --fix",
+    "test:all": "npm run test -w server && npm run test -w client"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
