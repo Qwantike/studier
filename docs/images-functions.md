@@ -96,7 +96,7 @@ calculateur formel, ni un moteur TikZ/PGFPlots, ni du tracé implicite/3D.
   Choisir ZIP pour disposer des fichiers hors ligne.
 - **ZIP complet / `.db`** : toutes les images du compte, même inutilisées, sont
   dans `data.json` / `note_images` (base64), et dans `images/` pour le ZIP.
-  L'instantané et le SQLite passent à la **version 3**, avec les tableaux blancs
+  L'instantané et le SQLite utilisent désormais la **version 4** (avec les révisions), avec les tableaux blancs
   existants. Un export de sélection ne prend que les images référencées par ses chapitres.
 - Plafonds d'export relevés à 128 Mio de JSON de données et 256 Mio avant compression
   ZIP pour contenir le quota d'images et les représentations multiples. Les autres

@@ -99,3 +99,11 @@ Sélectionner du texte pour afficher **Surligner** et la palette de six couleurs
 Le raccourci Ctrl+Maj+H et la syntaxe `==texte==` activent le surlignage.
 Les couleurs sont adaptées au thème et conservées dans les exports.
 Voir [le guide de mise en forme](docs/text-formatting.md) pour la syntaxe et la portabilité.
+
+### Révisions espacées
+
+Le panneau **Révisions et mémoire** de chaque chapitre propose une courbe de
+rétention estimée et quatre auto-évaluations. **Révisions** et le tableau de bord
+listent les rappels du jour ; les évaluations liées peuvent avancer une échéance.
+Appliquer la migration 008 après `npm ci`. Le modèle est une estimation non calibrée.
+Voir [le guide des révisions](docs/spaced-reviews.md).

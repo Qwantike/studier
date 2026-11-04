@@ -24,7 +24,7 @@ ne produit pas de PDF vide. Les structures sans chapitre ne deviennent pas des
 fichiers de cours.
 
 ZIP complet : mêmes fichiers de cours, tous en MD **et** PDF, plus `data.json`.
-Ce JSON est l'instantané relationnel complet, versionné (`version: 3`), avec :
+Ce JSON est l'instantané relationnel complet, versionné (`version: 4`), avec :
 
 - profil et dates du compte ;
 - années, semestres, matières, chapitres (contenu, statut, position et dates) ;
@@ -36,7 +36,7 @@ Le `.db` est une **vraie base SQLite autonome**, et non du JSON renommé ou un
 fichier PostgreSQL. Il contient les mêmes tables et données que `data.json`,
 les clés primaires/étrangères, et une table `export_metadata`. UUID et dates ISO
 sont en TEXT, notes et coefficients en REAL, positions/compteurs en INTEGER.
-`PRAGMA user_version` vaut 3. Il s'ouvre dans un client SQLite ; un fournisseur
+`PRAGMA user_version` vaut 4. Il s'ouvre dans un client SQLite ; un fournisseur
 cible devra mapper ce schéma vers son propre modèle. Il ne s'agit pas d'un dump
 PostgreSQL et il n'existe pas encore de restauration automatique dans Studier.
 Les fonctions, index et triggers internes de PostgreSQL ne sont pas exportés.
@@ -161,7 +161,7 @@ SELECT * FROM evaluation_chapters;
 - Un PDF d'exemple a été rendu puis inspecté visuellement, et son texte extrait.
 - Pas de validation de l'interface dans un navigateur dans cet environnement.
 
-## Tableaux blancs et images (format v3)
+## Tableaux blancs, images et révisions (format v4)
 
 Les exports comprennent désormais la table whiteboards et les scènes .excalidraw.
 Le détail du format et de la sélection est décrit dans [le guide diagrammes](diagrams-whiteboards.md).
@@ -170,3 +170,6 @@ Les diagrammes Mermaid restent en source dans le PDF textuel.
 Les images et courbes `plot` sont détaillées dans [le guide images et fonctions](images-functions.md).
 
 La palette et le surlignage sont détaillés dans [le guide de mise en forme](text-formatting.md).
+
+Les exports complets v4 comprennent aussi la table reviews, les points de départ
+des chapitres et les paramètres du modèle estimatif. Voir [les révisions espacées](spaced-reviews.md).
