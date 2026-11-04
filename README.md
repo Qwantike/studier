@@ -85,3 +85,10 @@ Les chapitres acceptent les blocs `mermaid` avec aperçu. Des tableaux Excalidra
 privés peuvent être rattachés à une matière ou un chapitre, avec sauvegarde JSON,
 quotas et export PNG/SVG. Appliquer `npm run migrate` après installation.
 Voir [le guide diagrammes et tableaux blancs](docs/diagrams-whiteboards.md).
+
+### Images et courbes de fonctions
+
+Le menu **+ → Advanced** propose **Image** (import privé) et **Fonctions**
+(tracé de `sin(x)`, `x^2`, etc., sans LaTeX). Les images et courbes sont incluses
+dans les exports. Appliquer la migration 007 après `npm ci`.
+Voir [le guide complet](docs/images-functions.md) pour les formats, quotas et exemples.

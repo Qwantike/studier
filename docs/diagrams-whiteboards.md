@@ -30,7 +30,7 @@ Aucune police n'est chargée depuis un CDN dans l'intégration fournie.
 
 ## Mermaid dans les chapitres
 
-Cliquer **Insérer un diagramme Mermaid**, ou créer un bloc Markdown classique :
+Choisir **+ → Advanced → Mermaid**, ou créer un bloc Markdown classique :
 
 ````markdown
 ```mermaid
