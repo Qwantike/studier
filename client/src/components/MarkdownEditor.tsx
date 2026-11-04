@@ -1,5 +1,15 @@
 import { languages } from '@codemirror/language-data'
 import { notePreview } from '../lib/notePreview'
+import {
+  NOTE_COLORS,
+  colorSelected,
+  noteFormatting,
+  toggleHighlight,
+  setNoteColor,
+  highlightSchema,
+  formattingKeys,
+} from '../editor/noteFormatting'
+import { isMarkSelectedCommand } from '@milkdown/kit/preset/commonmark'
 import { api } from '../api/client'
 import { commandsCtx, editorViewCtx } from '@milkdown/kit/core'
 import {
@@ -7,6 +17,7 @@ import {
   codeBlockSchema,
   setBlockTypeCommand,
 } from '@milkdown/kit/preset/commonmark'
+import { keymapRef } from '@milkdown/crepe/feature/toolbar'
 import { Crepe } from '@milkdown/crepe'
 import '@milkdown/crepe/theme/common/style.css'
 import '@milkdown/crepe/theme/frame.css'
@@ -35,6 +46,43 @@ function Inner({ chapterId, initial, onChange }: Props) {
       defaultValue: initial,
 
       featureConfigs: {
+        [Crepe.Feature.Toolbar]: {
+          buildToolbar: (builder) => {
+            builder.getGroup('formatting').addItem('highlight', {
+              label: 'Surligner',
+              keymap: keymapRef(formattingKeys.key, 'ToggleHighlight'),
+              icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 15-3-3 9-9 3 3-9 9ZM5 13l-2 4h4l2-2M2 21h20"/></svg>',
+              active: (ctx) =>
+                ctx
+                  .get(commandsCtx)
+                  .call(isMarkSelectedCommand.key, highlightSchema.type(ctx)),
+              onRun: (ctx) => {
+                ctx.get(commandsCtx).call(toggleHighlight.key)
+                ctx.get(editorViewCtx).focus()
+              },
+            })
+            const colors = builder.addGroup('note-colors', 'Couleur du texte')
+            for (const color of NOTE_COLORS)
+              colors.addItem(`color-${color.id}`, {
+                label: `Texte : ${color.label}`,
+                icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" class="note-color-swatch" data-note-color="${color.id}" fill="${color.light}"/></svg>`,
+                active: (ctx) => colorSelected(ctx, color.id),
+                onRun: (ctx) => {
+                  ctx.get(commandsCtx).call(setNoteColor.key, color.id)
+                  ctx.get(editorViewCtx).focus()
+                },
+              })
+            colors.addItem('color-default', {
+              label: 'Texte : couleur par défaut',
+              icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m5 18 6-13h2l6 13M8 13h8M3 21l18-18"/></svg>',
+              active: (ctx) => colorSelected(ctx, null),
+              onRun: (ctx) => {
+                ctx.get(commandsCtx).call(setNoteColor.key, null)
+                ctx.get(editorViewCtx).focus()
+              },
+            })
+          },
+        },
         [Crepe.Feature.ImageBlock]: {
           onUpload: async (file) => {
             setUploadError(null)
@@ -121,6 +169,7 @@ function Inner({ chapterId, initial, onChange }: Props) {
         },
       },
     })
+    crepe.editor.use(noteFormatting)
     crepe.on((listener) => {
       listener.markdownUpdated((_ctx, markdown, previous) => {
         if (markdown !== previous) onChangeRef.current(markdown)
