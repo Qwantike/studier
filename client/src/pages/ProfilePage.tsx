@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
+import NoteImagesPanel from '../components/NoteImagesPanel'
 import ExportPanel from '../components/ExportPanel'
 import { api } from '../api/client'
 import { useAuth, type AuthUser } from '../hooks/useAuth'
@@ -274,6 +275,13 @@ export default function ProfilePage() {
           </button>
           <Feedback state={all} />
         </div>
+      </Section>
+
+      <Section
+        title="Images des notes"
+        description="Fichiers privés conservés dans votre compte."
+      >
+        <NoteImagesPanel />
       </Section>
 
       <Section
