@@ -42,6 +42,7 @@ export function useEvaluationMutations() {
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ['evaluations'] })
     void qc.invalidateQueries({ queryKey: ['evaluation'] })
+    void qc.invalidateQueries({ queryKey: ['reviews'] })
   }
   return {
     create: useMutation({
@@ -78,7 +79,13 @@ export function useSetChapterStatus() {
         body: JSON.stringify({ status: v.status }),
       }),
     onSuccess: () => {
-      for (const key of ['evaluations', 'evaluation', 'tree', 'chapter'])
+      for (const key of [
+        'evaluations',
+        'evaluation',
+        'tree',
+        'chapter',
+        'reviews',
+      ])
         void qc.invalidateQueries({ queryKey: [key] })
     },
   })

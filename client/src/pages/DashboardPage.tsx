@@ -9,6 +9,7 @@ import {
 } from '../api/types'
 import { api } from '../api/client'
 import ErrorMessage from '../components/ErrorMessage'
+import TodayReviewsCard from '../components/TodayReviewsCard'
 import EvaluationCard from '../components/EvaluationCard'
 import { useDashboard } from '../hooks/useDashboard'
 import { useTree } from '../hooks/useTree'
@@ -286,6 +287,7 @@ export default function DashboardPage() {
       {tree && tree.length === 0 && <Onboarding />}
       {data && (
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
+          <TodayReviewsCard />
           <WeekCard events={data.week.events} />
 
           <Card

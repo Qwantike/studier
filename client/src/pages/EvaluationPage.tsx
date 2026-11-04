@@ -161,6 +161,15 @@ export default function EvaluationPage() {
         </div>
       )}
 
+      <p className="mt-6">
+        <Link
+          to={`/revisions?scope=all&evaluation_id=${ev.id}`}
+          className="text-sm text-indigo-600 dark:text-indigo-400 underline"
+        >
+          Plan de révision des chapitres associés
+        </Link>
+      </p>
+
       <section className="mt-10">
         <h2 className="mb-3 text-sm font-medium text-zinc-500">
           Chapitres à réviser

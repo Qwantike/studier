@@ -1,4 +1,5 @@
 import { languages } from '@codemirror/language-data'
+import { registerChapterSnapshot } from '../hooks/useChapterSaver'
 import { notePreview } from '../lib/notePreview'
 import {
   NOTE_COLORS,
@@ -11,7 +12,7 @@ import {
 } from '../editor/noteFormatting'
 import { isMarkSelectedCommand } from '@milkdown/kit/preset/commonmark'
 import { api } from '../api/client'
-import { commandsCtx, editorViewCtx } from '@milkdown/kit/core'
+import { commandsCtx, editorViewCtx, EditorStatus } from '@milkdown/kit/core'
 import {
   clearTextInCurrentBlockCommand,
   codeBlockSchema,
@@ -36,9 +37,25 @@ interface Props {
 function Inner({ chapterId, initial, onChange }: Props) {
   const [uploadError, setUploadError] = useState<string | null>(null)
   const onChangeRef = useRef(onChange)
+  const crepeRef = useRef<Crepe | null>(null)
+  const lastSentRef = useRef(initial)
   useEffect(() => {
     onChangeRef.current = onChange
   }, [onChange])
+
+  useEffect(
+    () =>
+      registerChapterSnapshot(chapterId, () => {
+        const crepe = crepeRef.current
+        if (crepe?.editor.status !== EditorStatus.Created) return
+        const markdown = crepe.getMarkdown()
+        if (markdown !== lastSentRef.current) {
+          lastSentRef.current = markdown
+          onChangeRef.current(markdown)
+        }
+      }),
+    [chapterId],
+  )
 
   useEditor((root) => {
     const crepe = new Crepe({
@@ -172,9 +189,13 @@ function Inner({ chapterId, initial, onChange }: Props) {
     crepe.editor.use(noteFormatting)
     crepe.on((listener) => {
       listener.markdownUpdated((_ctx, markdown, previous) => {
-        if (markdown !== previous) onChangeRef.current(markdown)
+        if (markdown !== previous && markdown !== lastSentRef.current) {
+          lastSentRef.current = markdown
+          onChangeRef.current(markdown)
+        }
       })
     })
+    crepeRef.current = crepe
     return crepe
   }, [])
 

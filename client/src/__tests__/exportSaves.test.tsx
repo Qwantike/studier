@@ -3,7 +3,11 @@ import { create, act, type ReactTestRenderer } from 'react-test-renderer'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { api } from '../api/client'
-import { flushForExport, useChapterSaver } from '../hooks/useChapterSaver'
+import {
+  flushForExport,
+  useChapterSaver,
+  registerChapterSnapshot,
+} from '../hooks/useChapterSaver'
 
 vi.mock('../api/client', () => ({ api: vi.fn().mockResolvedValue(undefined) }))
 let renderer: ReactTestRenderer
@@ -148,4 +152,37 @@ it('une reprise après échec conserve la saisie arrivée pendant la requête', 
   const sent = JSON.parse(vi.mocked(api).mock.calls[1]![1]!.body as string)
   expect(sent).toEqual({ title: 'Titre', content_md: 'Dernière frappe' })
   expect(saver.state).toBe('saved')
+})
+
+it('capture les frappes encore différées par Milkdown avant la sauvegarde', async () => {
+  const unregister = registerChapterSnapshot('chapter-1', () =>
+    saver.queue({ content_md: 'Encore dans l’éditeur' }),
+  )
+  try {
+    await act(async () => {
+      await flushForExport('chapter-1')
+    })
+    expect(api).toHaveBeenCalledWith('/chapters/chapter-1', {
+      method: 'PATCH',
+      body: JSON.stringify({ content_md: 'Encore dans l’éditeur' }),
+    })
+  } finally {
+    unregister()
+  }
+})
+it('capture aussi le contenu courant pour une action globale', async () => {
+  const unregister = registerChapterSnapshot('chapter-1', () =>
+    saver.queue({ content_md: 'Dernière capture globale' }),
+  )
+  try {
+    await act(async () => {
+      await flushForExport()
+    })
+    expect(api).toHaveBeenCalledWith('/chapters/chapter-1', {
+      method: 'PATCH',
+      body: JSON.stringify({ content_md: 'Dernière capture globale' }),
+    })
+  } finally {
+    unregister()
+  }
 })

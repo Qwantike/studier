@@ -8,6 +8,7 @@ import EvaluationPage from './pages/EvaluationPage'
 import EvaluationsPage from './pages/EvaluationsPage'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
+import ReviewsPage from './pages/ReviewsPage'
 import ProfilePage from './pages/ProfilePage'
 
 // L'éditeur (Milkdown, CodeMirror, KaTeX) est lourd : chargé seulement à l'ouverture d'un chapitre.
@@ -44,6 +45,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<DashboardPage />} />
         <Route path="emploi-du-temps" element={<CalendarPage />} />
+        <Route path="revisions" element={<ReviewsPage />} />
         <Route path="evaluations" element={<EvaluationsPage />} />
         <Route path="evaluations/:id" element={<EvaluationPage />} />
         <Route

@@ -12,12 +12,26 @@ export type SaveState = 'saved' | 'dirty' | 'saving' | 'error'
 
 // Sauvegardes en cours par chapitre : la page attend leur fin avant de recharger
 // un chapitre, pour ne jamais afficher une version plus ancienne que la dernière frappe.
+const editorSnapshots = new Map<string, () => void>()
+/** Capture synchrone avant une action : Milkdown diffère ses notifications de frappe. */
+export function registerChapterSnapshot(
+  chapterId: string,
+  snapshot: () => void,
+): () => void {
+  editorSnapshots.set(chapterId, snapshot)
+  return () => {
+    if (editorSnapshots.get(chapterId) === snapshot)
+      editorSnapshots.delete(chapterId)
+  }
+}
 const exportFlushers = new Map<string, () => Promise<void>>()
 export async function flushForExport(chapterId?: string): Promise<void> {
   if (chapterId) {
+    editorSnapshots.get(chapterId)?.()
     await exportFlushers.get(chapterId)?.()
     await waitForSaves(chapterId)
   } else {
+    for (const snapshot of [...editorSnapshots.values()]) snapshot()
     await Promise.all([...exportFlushers.values()].map((flush) => flush()))
     await Promise.all([...inflightByChapter.values()])
   }
@@ -63,6 +77,7 @@ export function useChapterSaver(chapterId: string, delay = 1000) {
         // La progression des évaluations dépend du statut des chapitres.
         void qc.invalidateQueries({ queryKey: ['evaluations'] })
         void qc.invalidateQueries({ queryKey: ['evaluation'] })
+        void qc.invalidateQueries({ queryKey: ['reviews'] })
       }
       setState(hasPending() ? 'dirty' : 'saved')
     } catch {
@@ -111,7 +126,7 @@ export function useChapterSaver(chapterId: string, delay = 1000) {
     const exportFlush = async () => {
       await flush()
       if (hasPending())
-        throw new Error("Sauvegarde impossible. Réessayez avant d'exporter.")
+        throw new Error('Sauvegarde impossible. Réessayez avant de continuer.')
     }
     exportFlushers.set(chapterId, exportFlush)
     window.addEventListener('beforeunload', onUnload)

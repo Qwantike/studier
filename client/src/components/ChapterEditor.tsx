@@ -6,6 +6,7 @@ import { useChapterSaver, type SaveState } from '../hooks/useChapterSaver'
 import { useEvaluations } from '../hooks/useEvaluations'
 import { countdownClass, countdownLabel, daysUntil } from '../lib/dates'
 import MarkdownEditor from './MarkdownEditor'
+import ChapterReviewPanel from './ChapterReviewPanel'
 import StatusPills from './StatusPills'
 
 function SaveIndicator({ state }: { state: SaveState }) {
@@ -71,6 +72,8 @@ export default function ChapterEditor({ chapter }: { chapter: Chapter }) {
         />
         <SaveIndicator state={state} />
       </div>
+
+      <ChapterReviewPanel chapterId={chapter.id} onRecorded={setStatus} />
 
       {evaluations && evaluations.length > 0 && (
         <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-zinc-500">

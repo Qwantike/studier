@@ -23,6 +23,7 @@ export function useTreeActions(onError: (message: string) => void) {
       // Renommer/supprimer/déplacer un chapitre ou une matière change aussi les évaluations.
       void qc.invalidateQueries({ queryKey: ['evaluations'] })
       void qc.invalidateQueries({ queryKey: ['evaluation'] })
+      void qc.invalidateQueries({ queryKey: ['reviews'] })
     },
     onError: (e: Error) => onError(e.message),
   }
