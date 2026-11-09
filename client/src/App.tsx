@@ -9,6 +9,9 @@ import EvaluationsPage from './pages/EvaluationsPage'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 import ReviewsPage from './pages/ReviewsPage'
+import ChapterQuizzesPage from './pages/ChapterQuizzesPage'
+import QuizPage from './pages/QuizPage'
+import PrivacyPage from './pages/PrivacyPage'
 import ProfilePage from './pages/ProfilePage'
 
 // L'éditeur (Milkdown, CodeMirror, KaTeX) est lourd : chargé seulement à l'ouverture d'un chapitre.
@@ -76,6 +79,9 @@ export default function App() {
             </Suspense>
           }
         />
+        <Route path="chapitres/:id/qcm" element={<ChapterQuizzesPage />} />
+        <Route path="qcm/:id" element={<QuizPage />} />
+        <Route path="confidentialite" element={<PrivacyPage />} />
         <Route path="profil" element={<ProfilePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

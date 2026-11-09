@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { api, isNotFound } from '../api/client'
 import type { Chapter } from '../api/types'
 import ErrorMessage from '../components/ErrorMessage'
+import ChapterQuizButton from '../components/ChapterQuizButton'
 import ChapterEditor from '../components/ChapterEditor'
 import ExportChapterButton from '../components/ExportChapterButton'
 import { waitForSaves } from '../hooks/useChapterSaver'
@@ -50,6 +51,7 @@ export default function ChapterPage() {
             >
               Tableaux blancs
             </Link>
+            <ChapterQuizButton chapterId={data.id} />
             <ExportChapterButton chapterId={data.id} />
           </div>
         </div>
