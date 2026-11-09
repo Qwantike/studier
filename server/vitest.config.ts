@@ -8,6 +8,7 @@ export default defineConfig({
     // 2. Utiliser 'forks' au lieu des threads pour éviter les crashs avec sharp et la BDD
     pool: 'forks',
 
+
     // 3. Forcer Vitest à ignorer les fichiers binaires de ces bibliothèques
     server: {
       deps: {
