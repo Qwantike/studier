@@ -8,6 +8,10 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 loadEnv({ path: path.resolve(here, '../../.env') })
 
 const schema = z.object({
+  OPENAI_API_KEY: z.string().default(''),
+  QUIZ_MODEL: z.string().min(1).default('gpt-4o-mini'),
+  QUIZ_DAILY_LIMIT: z.coerce.number().int().min(1).max(100).default(5),
+  QUIZ_PER_MINUTE: z.coerce.number().int().min(1).max(10).default(1),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL est requis'),
   PORT: z.coerce.number().int().positive().default(3001),
   // Intervalle de synchronisation des calendriers par URL, en minutes (0 = désactivée).

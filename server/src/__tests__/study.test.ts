@@ -159,7 +159,7 @@ it('refuse les données arbitraires et protège les routes entre comptes', async
 })
 it('exporte les événements et préférences en JSON et SQLite sans fuite', async () => {
   const data = await readSnapshot(A.id)
-  expect(data.version).toBe(5)
+  expect(data.version).toBe(6)
   expect(data.tables.study_activity).toHaveLength(1)
   expect(data.tables.study_preferences[0]).toMatchObject({
     user_id: A.id,
@@ -180,7 +180,7 @@ it('exporte les événements et préférences en JSON et SQLite sans fuite', asy
     expect(
       db.exec("SELECT value FROM export_metadata WHERE key='version'")[0]!
         .values,
-    ).toEqual([['5']])
+    ).toEqual([['6']])
   } finally {
     db.close()
   }
