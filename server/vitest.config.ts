@@ -2,12 +2,21 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
+    // 1. Spécifier qu'on est sur un backend Node
+    environment: 'node',
+
+    // 2. Utiliser 'forks' au lieu des threads pour éviter les crashs avec sharp et la BDD
+    pool: 'forks',
+
+    // 3. Forcer Vitest à ignorer les fichiers binaires de ces bibliothèques
+    server: {
+      deps: {
+        external: ['sharp', 'pg', 'sql.js', 'pdfkit', 'fflate']
+      }
+    },
+
+    // 4. (Optionnel) T'assurer que tes chemins sont bien définis
     include: ['src/__tests__/**/*.test.ts'],
-    globalSetup: ['src/__tests__/globalSetup.ts'],
-    setupFiles: ['src/__tests__/setup.ts'],
-    // Tous les fichiers partagent la même base de test : on les exécute l'un après l'autre.
-    fileParallelism: false,
-    testTimeout: 20_000,
-    hookTimeout: 30_000,
-  },
+    exclude: ['**/node_modules/**', '**/.git/**']
+  }
 })
