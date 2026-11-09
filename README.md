@@ -107,3 +107,7 @@ rétention estimée et quatre auto-évaluations. **Révisions** et le tableau de
 listent les rappels du jour ; les évaluations liées peuvent avancer une échéance.
 Appliquer la migration 008 après `npm ci`. Le modèle est une estimation non calibrée.
 Voir [le guide des révisions](docs/spaced-reviews.md).
+
+## Parcours d’étude facultatif
+
+Séries de jours d’étude, objectif hebdomadaire, badges et progression par matière sont disponibles dans le dashboard, sur activation volontaire. Le journal s’appuie sur les rappels enregistrés, y compris les tentatives « À revoir ». Voir [les règles de calcul et le déploiement](docs/dashboard-gamifie.md).
