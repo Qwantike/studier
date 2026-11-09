@@ -41,6 +41,9 @@ const schema = z.object({
     .transform((v) => v === 'true'),
   // Nombre de proxys de confiance devant l'API (1 derrière Vercel/nginx) : requis pour que req.ip soit juste.
   TRUST_PROXY: z.coerce.number().int().min(0).default(0),
+  ENCRYPTION_KEY: z
+    .string()
+    .length(64, 'ENCRYPTION_KEY doit être une chaîne hexadécimale de 64 caractères (32 octets)'),
 })
 
 const parsed = schema.safeParse(process.env)

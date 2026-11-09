@@ -3,12 +3,35 @@ import NoteImagesPanel from '../components/NoteImagesPanel'
 import ExportPanel from '../components/ExportPanel'
 import { api } from '../api/client'
 import { useAuth, type AuthUser } from '../hooks/useAuth'
+import { useEffect } from 'react'
+
+type AiProvider = 'openai' | 'gemini'
 
 const field =
   'w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-900'
 const label = 'mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400'
 const primary =
   'rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60'
+
+const AI_MODELS: Record<AiProvider, { id: string, label: string }[]> = {
+  openai: [
+    { id: 'gpt-4o-mini', label: 'GPT-4o Mini (Le plus économique)' },
+    { id: 'gpt-5-turbo', label: 'GPT-5 Turbo (Excellent compromis)' },
+    { id: 'gpt-6-astra', label: 'GPT-6 Astra (Très rapide et polyvalent)' },
+    { id: 'gpt-6.1-sol', label: 'GPT-6.1 Sol (Performances maximales)' }
+  ],
+  gemini: [
+    { id: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash Lite (Le plus économique)' },
+    { id: 'gemini-3.6-flash', label: 'Gemini 3.6 Flash (Excellent ratio vitesse/prix)' },
+  ]
+}
+
+interface AiSetupData {
+  has_key: boolean
+  provider?: AiProvider
+  model?: string
+  api_key_suffix?: string
+}
 
 interface State {
   busy: boolean
@@ -95,6 +118,36 @@ export default function ProfilePage() {
   const [pw, runPw] = useSubmit()
   const [all, runAll] = useSubmit()
   const [del, runDel] = useSubmit()
+  const [aiSetup, setAiSetup] = useState<AiSetupData | null>(null)
+  const [provider, setProvider] = useState<AiProvider>('openai')
+  const [model, setModel] = useState(AI_MODELS['openai'][0]!.id)
+  const [apiKey, setApiKey] = useState('')
+  const [aiSubmit, runAiSubmit] = useSubmit()
+
+  useEffect(() => {
+    api<AiSetupData>('/ai/settings').then(setAiSetup)
+  }, [])
+
+  const saveAiKey = (e: FormEvent) => {
+    e.preventDefault()
+    void runAiSubmit(async () => {
+      const res = await api<AiSetupData>('/ai/settings', {
+        method: 'POST',
+        body: JSON.stringify({ provider, model: model.trim(), api_key: apiKey.trim() })
+      })
+      setAiSetup(res)
+      setApiKey('')
+      return 'Paramètres IA configurés avec succès.'
+    })
+  }
+
+  const deleteAiKey = () => {
+    if (!window.confirm('Supprimer votre clé API ?')) return
+    void runAiSubmit(async () => {
+      await api('/ai/settings', { method: 'DELETE' })
+      setAiSetup({ has_key: false })
+    })
+  }
 
   if (!user) return null
   const emailChanged = email.trim().toLowerCase() !== user.email
@@ -275,6 +328,78 @@ export default function ProfilePage() {
           </button>
           <Feedback state={all} />
         </div>
+      </Section>
+
+      <Section title="Intelligence artificielle" description="Configurez votre propre clé API pour générer des évaluations basées sur vos cours.">
+        {aiSetup?.has_key ? (
+          <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+            <div>
+              <p className="text-sm font-medium text-emerald-800 dark:text-emerald-400">Clé API active</p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-500">
+                Fournisseur : <span className="capitalize">{aiSetup.provider}</span> • Modèle : {aiSetup.model}
+              </p>
+              <p className="mt-0.5 text-xs text-emerald-600/70 dark:text-emerald-500/70">
+                Terminant par ...{aiSetup.api_key_suffix}
+              </p>
+            </div>
+            <button type="button" onClick={deleteAiKey} className="text-sm font-medium text-red-600 hover:underline">Supprimer</button>
+          </div>
+        ) : (
+          <form onSubmit={saveAiKey} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="p-provider" className={label}>Fournisseur IA</label>
+                <select
+                  id="p-provider"
+                  className={field}
+                  value={provider}
+                  onChange={(e) => {
+                    const p = e.target.value as AiProvider;
+                    setProvider(p);
+                    // On bascule automatiquement sur le premier modèle du nouveau fournisseur
+                    setModel(AI_MODELS[p][0]!.id);
+                  }}
+                >
+                  <option value="openai">OpenAI</option>
+                  <option value="gemini">Google Gemini</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="p-model" className={label}>Modèle</label>
+                <select
+                  id="p-model"
+                  className={field}
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  required
+                >
+                  {AI_MODELS[provider].map(m => (
+                    <option key={m.id} value={m.id}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="p-apikey" className={label}>Clé API</label>
+              <input
+                id="p-apikey"
+                type="password"
+                required
+                className={field}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="sk-proj-..."
+              />
+            </div>
+
+            <div className="flex items-center gap-3 pt-1">
+              <button type="submit" disabled={aiSubmit.busy} className={primary}>Enregistrer</button>
+              <Feedback state={aiSubmit} />
+            </div>
+          </form>
+        )}
       </Section>
 
       <Section

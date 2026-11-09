@@ -10,6 +10,7 @@ import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 import ReviewsPage from './pages/ReviewsPage'
 import ProfilePage from './pages/ProfilePage'
+import AIEvaluationPage from './pages/AIEvaluationPage'
 
 // L'éditeur (Milkdown, CodeMirror, KaTeX) est lourd : chargé seulement à l'ouverture d'un chapitre.
 const ChapterPage = lazy(() => import('./pages/ChapterPage'))
@@ -48,6 +49,7 @@ export default function App() {
         <Route path="revisions" element={<ReviewsPage />} />
         <Route path="evaluations" element={<EvaluationsPage />} />
         <Route path="evaluations/:id" element={<EvaluationPage />} />
+        <Route path="/ai-evaluations/:id" element={<AIEvaluationPage />} />
         <Route
           path="chapitres/:id"
           element={
