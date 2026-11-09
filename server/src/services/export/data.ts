@@ -15,6 +15,12 @@ export const TABLES = {
   subjects: `${identity}, semester_id TEXT NOT NULL REFERENCES semesters(id), name TEXT NOT NULL, color TEXT NOT NULL, coefficient REAL, teacher TEXT, position INTEGER NOT NULL, ${dates}`,
   chapters: `${identity}, subject_id TEXT NOT NULL REFERENCES subjects(id), title TEXT NOT NULL, content_md TEXT NOT NULL, status TEXT NOT NULL, position INTEGER NOT NULL, review_started_at TEXT, initial_stability_days REAL, ${dates}`,
   reviews: `${identity}, chapter_id TEXT NOT NULL REFERENCES chapters(id), reviewed_at TEXT NOT NULL, rating TEXT NOT NULL, stability_days REAL NOT NULL, ordinal INTEGER NOT NULL, model_version INTEGER NOT NULL`,
+  study_activity: `${identity}, chapter_id TEXT NOT NULL REFERENCES chapters(id), occurred_at TEXT NOT NULL, kind TEXT NOT NULL`,
+  study_preferences: `${identity}, enabled INTEGER NOT NULL, weekly_days INTEGER NOT NULL`,
+  quiz_generation_requests: `${identity}, status TEXT NOT NULL, created_at TEXT NOT NULL`,
+  quizzes: `${identity}, chapter_id TEXT NOT NULL REFERENCES chapters(id), chapter_title TEXT NOT NULL, difficulty TEXT NOT NULL, request_hash TEXT NOT NULL, source_hash TEXT NOT NULL, model TEXT NOT NULL, prompt_version INTEGER NOT NULL, consent_version INTEGER NOT NULL, created_at TEXT NOT NULL`,
+  questions: `${identity}, quiz_id TEXT NOT NULL REFERENCES quizzes(id), position INTEGER NOT NULL, prompt TEXT NOT NULL, options TEXT NOT NULL, correct_index INTEGER NOT NULL, explanation TEXT NOT NULL`,
+  attempts: `${identity}, quiz_id TEXT NOT NULL REFERENCES quizzes(id), answers TEXT NOT NULL, score INTEGER NOT NULL, total INTEGER NOT NULL, created_at TEXT NOT NULL`,
   evaluations: `${identity}, subject_id TEXT NOT NULL REFERENCES subjects(id), title TEXT NOT NULL, type TEXT NOT NULL, date TEXT NOT NULL, coefficient REAL, grade REAL, ${dates}`,
   evaluation_chapters:
     'evaluation_id TEXT NOT NULL REFERENCES evaluations(id), chapter_id TEXT NOT NULL REFERENCES chapters(id), user_id TEXT NOT NULL REFERENCES users(id)',
@@ -32,10 +38,10 @@ export type Root = {
 export type Table = keyof typeof TABLES
 export type Row = Record<
   string,
-  string | number | null | Record<string, unknown>
+  string | number | boolean | null | Record<string, unknown>
 >
 export interface Snapshot {
-  version: 4
+  version: 6
   review_model: typeof REVIEW_MODEL
   exported_at: string
   tables: Record<Table, Row[]>
@@ -134,7 +140,7 @@ export async function readSnapshot(
     if (!tables.users.length) throw new HttpError(404, 'Compte introuvable')
     await client.query('COMMIT')
     return {
-      version: 4,
+      version: 6,
       review_model: REVIEW_MODEL,
       exported_at: new Date().toISOString(),
       tables,

@@ -90,8 +90,8 @@ Les anciennes notes restent lisibles ; aucune conversion en masse n'est nécessa
   limites existantes (LaTeX/Mermaid en source, mise en page des tables) restent
   décrites dans le guide des exports.
 - **Export complet JSON / `.db`** : la source Markdown de chaque chapitre est
-  préservée. Les exports complets utilisent désormais la version 4, avec l’historique
-  des révisions (voir le guide des révisions espacées).
+  préservée. Les exports complets utilisent la version 6, avec l’historique des révisions,
+  le parcours d’étude et les QCM (voir les guides correspondants).
 
 ## Vérification
 

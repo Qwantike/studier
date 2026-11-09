@@ -59,6 +59,7 @@ export function useRecordReview() {
           'evaluations',
           'evaluation',
           'dashboard',
+          'study',
         ].map((key) => cache.invalidateQueries({ queryKey: [key] })),
       )
     },

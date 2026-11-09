@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import NoteImagesPanel from '../components/NoteImagesPanel'
 import ExportPanel from '../components/ExportPanel'
@@ -283,6 +284,15 @@ export default function ProfilePage() {
       >
         <NoteImagesPanel />
       </Section>
+
+      <p>
+        <Link
+          className="text-sm text-indigo-600 underline"
+          to="/confidentialite"
+        >
+          Confidentialité et entraînements par IA
+        </Link>
+      </p>
 
       <Section
         title="Exporter mes données"

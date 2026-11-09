@@ -24,6 +24,7 @@ export function useTreeActions(onError: (message: string) => void) {
       void qc.invalidateQueries({ queryKey: ['evaluations'] })
       void qc.invalidateQueries({ queryKey: ['evaluation'] })
       void qc.invalidateQueries({ queryKey: ['reviews'] })
+      void qc.invalidateQueries({ queryKey: ['study'] })
     },
     onError: (e: Error) => onError(e.message),
   }
