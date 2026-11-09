@@ -82,13 +82,13 @@ export async function sqlite(snapshot: Snapshot): Promise<Buffer> {
   const SQL = await loadSql()
   const db = new SQL.Database()
   try {
-    db.run('PRAGMA foreign_keys=ON; PRAGMA user_version=4; BEGIN;')
+    db.run('PRAGMA foreign_keys=ON; PRAGMA user_version=5; BEGIN;')
     db.run(
       'CREATE TABLE export_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
     )
     db.run('INSERT INTO export_metadata VALUES (?, ?), (?, ?)', [
       'version',
-      '4',
+      String(snapshot.version),
       'exported_at',
       snapshot.exported_at,
     ])
@@ -108,9 +108,11 @@ export async function sqlite(snapshot: Snapshot): Promise<Buffer> {
         for (const row of snapshot.tables[table])
           statement.run(
             keys.map((k) =>
-              typeof row[k] === 'object' && row[k] !== null
-                ? JSON.stringify(row[k])
-                : ((row[k] as string | number | null) ?? null),
+              typeof row[k] === 'boolean'
+                ? Number(row[k])
+                : typeof row[k] === 'object' && row[k] !== null
+                  ? JSON.stringify(row[k])
+                  : ((row[k] as string | number | null) ?? null),
             ),
           )
       } finally {
@@ -205,7 +207,7 @@ export async function archive(
     strToU8(
       JSON.stringify(
         {
-          version: 4,
+          version: 5,
           exported_at: snapshot.exported_at,
           complete,
           formats,

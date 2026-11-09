@@ -21,6 +21,7 @@ import { exportsRouter } from './routes/exports.js'
 import { whiteboardsRouter } from './routes/whiteboards.js'
 import { noteImagesRouter } from './routes/noteImages.js'
 import { reviewsRouter } from './routes/reviews.js'
+import { studyRouter } from './routes/study.js'
 import { treeRouter } from './routes/tree.js'
 
 export function createApp() {
@@ -40,6 +41,7 @@ export function createApp() {
   app.use('/api/whiteboards', whiteboardsRouter)
   app.use('/api/exports', exportsRouter)
   app.use('/api', reviewsRouter)
+  app.use('/api', studyRouter)
   app.use('/api', treeRouter)
   app.use('/api/years', yearsRouter)
   app.use('/api/semesters', semestersRouter)

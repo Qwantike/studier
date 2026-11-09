@@ -253,7 +253,7 @@ describe('suivi et estimation des révisions', () => {
     expect(state.history).toHaveLength(50)
     expect(state.history[0].ordinal).toBe(55)
     const snapshot = await readSnapshot(A.id)
-    expect(snapshot.version).toBe(4)
+    expect(snapshot.version).toBe(5)
     expect(snapshot.review_model.version).toBe(1)
     expect(
       snapshot.tables.reviews.filter((row) => row.chapter_id === id),
@@ -265,7 +265,7 @@ describe('suivi et estimation des révisions', () => {
     const SQL = await initSqlJs(),
       db = new SQL.Database(await sqlite(snapshot))
     try {
-      expect(db.exec('PRAGMA user_version')[0]!.values).toEqual([[4]])
+      expect(db.exec('PRAGMA user_version')[0]!.values).toEqual([[5]])
       expect(db.exec('SELECT count(*) FROM reviews')[0]!.values).toEqual([
         [snapshot.tables.reviews.length],
       ])

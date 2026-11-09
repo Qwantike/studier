@@ -135,7 +135,7 @@ describe('images privées', () => {
     const SQL = await initSqlJs(),
       db = new SQL.Database(await sqlite(snapshot))
     try {
-      expect(db.exec('PRAGMA user_version')[0]!.values).toEqual([[4]])
+      expect(db.exec('PRAGMA user_version')[0]!.values).toEqual([[5]])
       const rows = db.exec('SELECT data_base64,byte_size FROM note_images')[0]!
         .values
       expect(Buffer.from(String(rows[0]![0]), 'base64').length).toBe(
