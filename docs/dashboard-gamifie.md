@@ -41,7 +41,7 @@ Masquer le parcours ne désactive pas le journal des rappels : il reste lié à 
 - Les deux routes exigent une session et utilisent exclusivement son utilisateur. Le mécanisme CSRF existant s’applique à la mutation. Réponses `Cache-Control: no-store`.
 - Les statistiques sont lues dans une transaction cohérente `REPEATABLE READ`. Les préférences sont mises à jour par upsert atomique et les champs omis sont conservés.
 - Index par compte/date et par compte/chapitre/date. Le navigateur rafraîchit toutes les minutes, au retour au premier plan et après les mutations concernées.
-- Les exports complets JSON et SQLite incluent `study_activity` et `study_preferences`. Le format d’export passe de 4 à 5, y compris les métadonnées SQLite. Les booléens y sont encodés en 0/1. Les exports de sélections gardent leur portée actuelle et n’incluent pas les statistiques globales du compte.
+- Les exports complets JSON et SQLite incluent `study_activity` et `study_preferences`. Le format d’export courant est 6, incluant aussi les QCM et leurs tentatives, y compris les métadonnées SQLite. Les booléens y sont encodés en 0/1. Les exports de sélections gardent leur portée actuelle et n’incluent pas les statistiques globales du compte.
 
 ## Mise en service
 

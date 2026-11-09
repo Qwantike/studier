@@ -24,11 +24,13 @@ ne produit pas de PDF vide. Les structures sans chapitre ne deviennent pas des
 fichiers de cours.
 
 ZIP complet : mêmes fichiers de cours, tous en MD **et** PDF, plus `data.json`.
-Ce JSON est l'instantané relationnel complet, versionné (`version: 4`), avec :
+Ce JSON est l'instantané relationnel complet, versionné (`version: 6`), avec :
 
 - profil et dates du compte ;
 - années, semestres, matières, chapitres (contenu, statut, position et dates) ;
 - évaluations, notes, coefficients et liens évaluation/chapitre ;
+- historique des rappels, activités et préférences du parcours ;
+- QCM, questions avec corrigés, tentatives et registre minimal des générations ;
 - événements et abonnements calendaires, état de synchronisation compris ;
 - métadonnées des sessions (appareil, IP, dates), sans jeton d'authentification.
 
@@ -36,7 +38,7 @@ Le `.db` est une **vraie base SQLite autonome**, et non du JSON renommé ou un
 fichier PostgreSQL. Il contient les mêmes tables et données que `data.json`,
 les clés primaires/étrangères, et une table `export_metadata`. UUID et dates ISO
 sont en TEXT, notes et coefficients en REAL, positions/compteurs en INTEGER.
-`PRAGMA user_version` vaut 4. Il s'ouvre dans un client SQLite ; un fournisseur
+`PRAGMA user_version` vaut 6. Il s'ouvre dans un client SQLite ; un fournisseur
 cible devra mapper ce schéma vers son propre modèle. Il ne s'agit pas d'un dump
 PostgreSQL et il n'existe pas encore de restauration automatique dans Studier.
 Les fonctions, index et triggers internes de PostgreSQL ne sont pas exportés.
@@ -173,3 +175,5 @@ La palette et le surlignage sont détaillés dans [le guide de mise en forme](te
 
 Les exports complets v4 comprennent aussi la table reviews, les points de départ
 des chapitres et les paramètres du modèle estimatif. Voir [les révisions espacées](spaced-reviews.md).
+
+Les QCM et leur registre de consommation sont inclus depuis le format 6. Voir [les QCM générés](qcm-generes.md).
