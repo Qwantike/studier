@@ -78,6 +78,7 @@ export function useChapterSaver(chapterId: string, delay = 1000) {
         void qc.invalidateQueries({ queryKey: ['evaluations'] })
         void qc.invalidateQueries({ queryKey: ['evaluation'] })
         void qc.invalidateQueries({ queryKey: ['reviews'] })
+        void qc.invalidateQueries({ queryKey: ['study'] })
       }
       setState(hasPending() ? 'dirty' : 'saved')
     } catch {

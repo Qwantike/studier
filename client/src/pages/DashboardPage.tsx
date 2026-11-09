@@ -9,6 +9,7 @@ import {
 } from '../api/types'
 import { api } from '../api/client'
 import ErrorMessage from '../components/ErrorMessage'
+import StudyDashboard from '../components/StudyDashboard'
 import TodayReviewsCard from '../components/TodayReviewsCard'
 import EvaluationCard from '../components/EvaluationCard'
 import { useDashboard } from '../hooks/useDashboard'
@@ -274,6 +275,8 @@ export default function DashboardPage() {
       <h1 className="mt-1 text-2xl font-semibold tracking-tight">
         Tableau de bord
       </h1>
+
+      <StudyDashboard />
 
       {isLoading && <p className="mt-8 text-sm text-zinc-500">Chargement…</p>}
       {error && (
