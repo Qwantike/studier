@@ -1,4 +1,5 @@
 import { Marked, type TokenizerExtension } from 'marked'
+import { displayMath, inlineMath } from './mathMarkdown.js'
 import { parseColorOpen } from '../../../../shared/noteFormatting.js'
 
 /** Cherche la fermeture en sautant les échappements, le code et les destinations des liens. */
@@ -100,4 +101,6 @@ const color: TokenizerExtension = {
   childTokens: ['tokens'],
 }
 /** Instance privée : les autres usages de marked conservent leur configuration. */
-export const documentMarkdown = new Marked({ extensions: [highlight, color] })
+export const documentMarkdown = new Marked({
+  extensions: [highlight, color, displayMath, inlineMath],
+})

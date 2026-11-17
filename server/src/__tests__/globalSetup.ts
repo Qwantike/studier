@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import pg from 'pg'
@@ -19,9 +19,9 @@ export default async function setup(): Promise<void> {
   } finally {
     await client.end()
   }
-  execSync('npx tsx src/db/migrate.ts', {
+  execFileSync(process.execPath, ['--import', 'tsx', 'src/db/migrate.ts'], {
     cwd: serverDir,
-    stdio: 'pipe',
+    stdio: 'inherit',
     env: { ...process.env, DATABASE_URL: url, JWT_SECRET: 'x'.repeat(40) },
   })
 }

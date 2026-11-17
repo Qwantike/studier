@@ -37,9 +37,8 @@ jobs:
 
     env:
       TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/etudes_test
-      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/etudes_test
       JWT_SECRET: ci-only-test-secret-not-for-production-123456789
-      ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000
+      ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
 
     steps:
       - name: Checkout
@@ -55,6 +54,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Chromium for PDF tests
+        run: npx playwright-core install --with-deps --only-shell chromium
+
       - name: Typecheck server and client
         run: npm run typecheck
 
@@ -62,6 +64,9 @@ jobs:
         run: npm test -w client
 
       - name: Run server tests
+        env:
+          # The hosted runner restricts unprivileged Chromium namespaces.
+          PDF_CHROMIUM_NO_SANDBOX: '1'
         run: npm test -w server
 
       - name: Build client

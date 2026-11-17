@@ -1,5 +1,6 @@
 import type {} from 'pdfkit'
 import type { Token, Tokens } from 'marked'
+import type { Graphic, GraphicSource } from './pdfGraphics.js'
 import {
   HIGHLIGHT_BACKGROUND,
   HIGHLIGHT_TEXT,
@@ -15,28 +16,45 @@ export function inlinePdf(
   doc: PDFKit.PDFDocument,
   tokens: Token[],
   renderImage: (token: Tokens.Image) => void,
+  graphics: (input: GraphicSource) => Graphic | undefined,
   size = 10,
   face = 'regular',
 ): void {
   const left = doc.page.margins.left,
     right = doc.page.width - doc.page.margins.right
-  const height = size * 1.55
+  const lineHeight = size * 1.55
   let x = left,
     y = doc.y,
-    drawn = false
+    ascent = size,
+    descent = lineHeight - size
+  const fragments: {
+    x: number
+    width: number
+    highlighted: boolean
+    draw: (baseline: number) => void
+  }[] = []
   const newline = () => {
-    x = left
-    y += height
-  }
-  const room = () => {
+    const height = ascent + descent
     if (y + height > doc.page.height - doc.page.margins.bottom) {
       doc.addPage()
       y = doc.y
-      x = left
     }
+    for (const fragment of fragments) {
+      if (fragment.highlighted)
+        doc
+          .save()
+          .rect(fragment.x, y, fragment.width, height)
+          .fill(HIGHLIGHT_BACKGROUND)
+          .restore()
+      fragment.draw(y + ascent)
+    }
+    fragments.length = 0
+    x = left
+    y += height
+    ascent = size
+    descent = lineHeight - size
   }
   const draw = (text: string, style: Style) => {
-    doc.font(style.face).fontSize(size)
     for (const word of text.split(/(\s+)/u)) {
       if (!word) continue
       if (word.includes('\n')) {
@@ -46,15 +64,15 @@ export function inlinePdf(
       const space = /^\s+$/.test(word)
       if (space && x === left) continue
       let remaining = word
-      let width = doc.widthOfString(remaining)
-      if (x + width > right && x > left) {
-        newline()
-        if (space) continue
-      }
       while (remaining) {
-        room()
+        doc.font(style.face).fontSize(size)
+        let width = doc.widthOfString(remaining)
+        if (x + width > right && x > left) {
+          newline()
+          if (space) break
+          doc.font(style.face).fontSize(size)
+        }
         let part = remaining
-        width = doc.widthOfString(part)
         if (width > right - left) {
           const chars = Array.from(remaining)
           let low = 1,
@@ -68,29 +86,56 @@ export function inlinePdf(
           part = chars.slice(0, low).join('')
           width = doc.widthOfString(part)
         }
-        if (style.highlighted)
-          doc
-            .save()
-            .rect(x, y, width, height)
-            .fill(HIGHLIGHT_BACKGROUND)
-            .restore()
-        doc
-          .font(style.face)
-          .fontSize(size)
-          .fillColor(style.color)
-          .text(part, x, y, { lineBreak: false })
+        const at = x
+        fragments.push({
+          x: at,
+          width,
+          highlighted: style.highlighted,
+          draw: (baseline) => {
+            doc
+              .font(style.face)
+              .fontSize(size)
+              .fillColor(style.color)
+              .text(part, at, baseline, {
+                lineBreak: false,
+                baseline: 'alphabetic',
+              })
+          },
+        })
         x += width
-        drawn = true
         remaining = remaining.slice(part.length)
         if (remaining) newline()
       }
     }
   }
+  const drawMath = (graphic: Graphic, style: Style) => {
+    const scale = Math.min(
+      size / (16 * 1.21),
+      (right - left) / graphic.width,
+      220 / graphic.height,
+    )
+    const width = graphic.width * scale
+    const height = graphic.height * scale
+    const above = Math.min(height, Math.max(0, graphic.ascent * scale))
+    if (x + width > right && x > left) newline()
+    const at = x
+    ascent = Math.max(ascent, above)
+    descent = Math.max(descent, height - above)
+    fragments.push({
+      x: at,
+      width,
+      highlighted: style.highlighted,
+      draw: (baseline) => {
+        doc.image(graphic.png, at, baseline - above, { width, height })
+      },
+    })
+    x += width
+  }
   const visit = (items: Token[], style: Style, depth = 0) => {
     if (depth > 50) throw new Error('Mise en forme trop imbriquée')
     for (const token of items) {
       if (token.type === 'image') {
-        if (x > left) newline()
+        if (fragments.length) newline()
         doc.y = y
         doc.x = left
         renderImage(token as Tokens.Image)
@@ -118,6 +163,12 @@ export function inlinePdf(
           : {}),
         ...(token.type === 'strong' ? { face: 'bold' } : {}),
       }
+      if (token.type === 'inlineMath') {
+        const graphic = graphics({ kind: 'inline', source: token.text })
+        if (graphic) drawMath(graphic, childStyle)
+        else draw(token.raw, { ...childStyle, face: 'mono' })
+        continue
+      }
       if ('tokens' in token && Array.isArray(token.tokens)) {
         visit(token.tokens, childStyle, depth + 1)
         if (token.type === 'link') draw(` (${token.href})`, style)
@@ -129,6 +180,7 @@ export function inlinePdf(
     }
   }
   visit(tokens, { color: '#202635', highlighted: false, face })
+  if (fragments.length) newline()
   doc.x = left
-  doc.y = (drawn || x > left ? y + height : y) + height * 0.3
+  doc.y = y + lineHeight * 0.3
 }

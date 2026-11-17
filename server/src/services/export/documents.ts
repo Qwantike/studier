@@ -8,6 +8,11 @@ import sharp from 'sharp'
 import PDFDocument from 'pdfkit'
 import { type Token, type Tokens } from 'marked'
 import { documentMarkdown } from './inlineFormatting.js'
+import {
+  PdfGraphicsRenderer,
+  graphicSource,
+  type Graphic,
+} from './pdfGraphics.js'
 import { inlinePdf } from './inlinePdf.js'
 import type { Readable } from 'node:stream'
 import { fileURLToPath } from 'node:url'
@@ -44,11 +49,19 @@ const font = (name: string) =>
   fileURLToPath(new URL(`../../../assets/fonts/${name}.ttf`, import.meta.url))
 const MAX_PDF_BYTES = 16 * 1024 * 1024
 
-/** Rendu textuel sûr : aucun HTML exécuté, aucune requête réseau pour images/liens. */
+/** Le texte et les images existantes restent gérés par PDFKit. */
 export async function pdf(
   chapter: Chapter,
   images: ReadonlyMap<string, Buffer> = new Map(),
+  batchRenderer?: PdfGraphicsRenderer,
 ): Promise<Buffer> {
+  if (Buffer.byteLength(chapter.content_md) > 1024 * 1024)
+    throw new HttpError(413, 'Chapitre trop volumineux pour le PDF (1 Mio)')
+  const tokens = documentMarkdown.lexer(markdown(chapter))
+  const renderer = batchRenderer ?? new PdfGraphicsRenderer()
+  const graphics = await renderer.prepare(tokens).finally(async () => {
+    if (!batchRenderer) await renderer.close()
+  })
   const imageSizes = new Map<string, { width: number; height: number }>()
   for (const [url, buffer] of images) {
     if (!chapter.content_md.includes(url)) continue
@@ -126,9 +139,28 @@ export async function pdf(
             ? tokens
             : [{ type: 'text', raw: fallback, text: fallback }],
           renderImage,
+          graphics,
           size,
           face,
         )
+      }
+      const renderBlockGraphic = (graphic: Graphic) => {
+        const left = doc.page.margins.left
+        const width = doc.page.width - left - doc.page.margins.right
+        const scale = Math.min(
+          0.75,
+          width / graphic.width,
+          520 / graphic.height,
+        )
+        const height = graphic.height * scale
+        room(height + 12)
+        const y = doc.y
+        doc.image(graphic.png, left + (width - graphic.width * scale) / 2, y, {
+          width: graphic.width * scale,
+          height,
+        })
+        doc.x = left
+        doc.y = y + height + 12
       }
       const renderPlot = (source: string) => {
         const config = parsePlot(source),
@@ -203,6 +235,21 @@ export async function pdf(
       const render = (tokens: Token[], depth = 0) => {
         if (depth > 30) throw new HttpError(413, 'Markdown trop imbriqué')
         for (const token of tokens) {
+          const input = graphicSource(token)
+          if (input && input.kind !== 'inline') {
+            const graphic = graphics(input)
+            if (graphic) renderBlockGraphic(graphic)
+            else {
+              line(
+                input.kind === 'mermaid'
+                  ? 'Diagramme Mermaid non rendu (source conservée)'
+                  : 'Formule LaTeX non rendue (source conservée)',
+                9,
+              )
+              line(input.source, 9, 'mono')
+            }
+            continue
+          }
           switch (token.type) {
             case 'heading':
               renderInline(
@@ -271,9 +318,7 @@ export async function pdf(
           }
         }
       }
-      if (Buffer.byteLength(chapter.content_md) > 1024 * 1024)
-        throw new HttpError(413, 'Chapitre trop volumineux pour le PDF (1 Mio)')
-      render(documentMarkdown.lexer(markdown(chapter)))
+      render(tokens)
       doc.end()
     } catch (err) {
       ;(doc as unknown as Readable).destroy()

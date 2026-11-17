@@ -87,7 +87,7 @@ Les anciennes notes restent lisibles ; aucune conversion en masse n'est nécessa
   y compris dans les titres, listes et tableaux. Les fonds suivent les retours
   à la ligne et les changements de page. Le gras est également conservé.
   L'italique et le barré restent aplatis dans ce générateur PDF ; les autres
-  limites existantes (LaTeX/Mermaid en source, mise en page des tables) restent
+  limites de mise en page des tables restent
   décrites dans le guide des exports.
 - **Export complet JSON / `.db`** : la source Markdown de chaque chapitre est
   préservée. Les exports complets utilisent désormais la version 4, avec l’historique

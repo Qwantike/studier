@@ -14,6 +14,7 @@ import {
   type Row,
   type Root,
 } from './data.js'
+import { PdfGraphicsRenderer } from './pdfGraphics.js'
 import { markdown, pdf, slug } from './documents.js'
 
 export type { Root } from './data.js'
@@ -158,41 +159,48 @@ export async function archive(
   )
   for (const [url, buffer] of images) add(imagePaths.get(url)!, buffer)
   const plots: { chapter_id: string; path: string }[] = []
-  for (const { row, path } of chapters) {
-    const chapter = {
-      title: String(row.title),
-      content_md: String(row.content_md),
+  const renderer = formats.includes('pdf')
+    ? new PdfGraphicsRenderer()
+    : undefined
+  try {
+    for (const { row, path } of chapters) {
+      const chapter = {
+        title: String(row.title),
+        content_md: String(row.content_md),
+      }
+      if (formats.includes('md')) {
+        let md = markdown(chapter)
+        for (const [url, imagePath] of imagePaths)
+          md = md.replaceAll(
+            url,
+            posix.relative(posix.dirname(`cours/${path}.md`), imagePath),
+          )
+        // Le MD conserve la source éditable ; les SVG voisins restent lisibles sans extension Markdown.
+        let index = 0
+        marked.walkTokens(marked.lexer(chapter.content_md), (token: Token) => {
+          if (
+            token.type !== 'code' ||
+            token.lang?.trim().toLowerCase() !== 'plot'
+          )
+            return
+          try {
+            const svg = plotSvg(parsePlot(token.text)),
+              plotPath = `graphiques/${row.id}-${++index}.svg`
+            add(plotPath, strToU8(svg))
+            plots.push({ chapter_id: String(row.id), path: plotPath })
+            md += `\n![Courbe de fonctions ${index}](${posix.relative(posix.dirname(`cours/${path}.md`), plotPath)})\n`
+          } catch (error) {
+            if (error instanceof HttpError)
+              throw error /* source invalide conservée */
+          }
+        })
+        add(`cours/${path}.md`, strToU8(md))
+      }
+      if (formats.includes('pdf'))
+        add(`cours/${path}.pdf`, await pdf(chapter, images, renderer))
     }
-    if (formats.includes('md')) {
-      let md = markdown(chapter)
-      for (const [url, imagePath] of imagePaths)
-        md = md.replaceAll(
-          url,
-          posix.relative(posix.dirname(`cours/${path}.md`), imagePath),
-        )
-      // Le MD conserve la source éditable ; les SVG voisins restent lisibles sans extension Markdown.
-      let index = 0
-      marked.walkTokens(marked.lexer(chapter.content_md), (token: Token) => {
-        if (
-          token.type !== 'code' ||
-          token.lang?.trim().toLowerCase() !== 'plot'
-        )
-          return
-        try {
-          const svg = plotSvg(parsePlot(token.text)),
-            plotPath = `graphiques/${row.id}-${++index}.svg`
-          add(plotPath, strToU8(svg))
-          plots.push({ chapter_id: String(row.id), path: plotPath })
-          md += `\n![Courbe de fonctions ${index}](${posix.relative(posix.dirname(`cours/${path}.md`), plotPath)})\n`
-        } catch (error) {
-          if (error instanceof HttpError)
-            throw error /* source invalide conservée */
-        }
-      })
-      add(`cours/${path}.md`, strToU8(md))
-    }
-    if (formats.includes('pdf'))
-      add(`cours/${path}.pdf`, await pdf(chapter, images))
+  } finally {
+    await renderer?.close()
   }
   for (const board of snapshot.tables.whiteboards) {
     add(

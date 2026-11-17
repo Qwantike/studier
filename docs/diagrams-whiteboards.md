@@ -60,8 +60,9 @@ Maximum 20 000 caractères et 300 arêtes. L'aperçu a une hauteur adaptée au S
 plafonnée à 900 px et redimensionnable. Ces protections ne constituent pas un
 budget CPU strict : un diagramme complexe peut encore ralentir son onglet.
 
-Les exports MD conservent les fences Mermaid. Le générateur PDF serveur demeure
-textuel : il exporte le code du diagramme, pas son rendu graphique.
+Les exports MD conservent les fences Mermaid. Le PDF incorpore le rendu du
+diagramme. Si un bloc est invalide ou hors limites, il conserve sa source.
+Voir [les prérequis PDF](exports.md#rendu-pdf).
 
 ## Tableaux blancs
 

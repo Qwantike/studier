@@ -88,7 +88,7 @@ calculateur formel, ni un moteur TikZ/PGFPlots, ni du tracé implicite/3D.
 
 - **PDF** : images importées incorporées et courbes `plot` tracées en vecteurs,
   avec axes et légende. Les images distantes ne sont jamais téléchargées ; elles
-  restent des descriptions. Mermaid et les formules LaTeX conservent leur source.
+  restent des descriptions. Voir le [rendu de Mermaid et LaTeX](exports.md#rendu-pdf).
 - **ZIP Markdown** : images sous `images/`, liens relatifs dans les fichiers MD ;
   source `plot` conservée et aperçus SVG autonomes sous `graphiques/`, référencés
   à la fin du MD. Un lecteur Markdown sans extension `plot` peut ainsi voir les courbes.

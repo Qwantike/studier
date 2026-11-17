@@ -54,9 +54,32 @@ PDF A4 textuel avec titres, paragraphes, listes, code monospacé, tables présen
 en blocs et polices DejaVu embarquées (licence dans `server/assets/fonts`). Les
 accents français, de nombreux signes IPA et grecs sont pris en charge par ces
 polices. Ce n'est pas une reproduction exacte de l'éditeur : le gras, les couleurs de la palette et le surlignage sont conservés ;
-l’italique et le barré restent aplatis. Le HTML non reconnu et les formules LaTeX restent en texte source ; les images importées sont incorporées et les courbes `plot` tracées. Les images
-distantes restent décrites avec leur URL. Aucun navigateur, téléchargement d'image, appel
-externe ou exécution de HTML n'est nécessaire à la génération.
+l’italique et le barré restent aplatis. Les images importées sont incorporées,
+les courbes `plot` sont tracées en vecteurs, et le HTML non reconnu reste en texte
+source. Les images distantes restent décrites avec leur URL.
+
+KaTeX compose les formules en ligne (`$…$`) et en bloc (fences `latex`/`tex` ou `$$…$$` sur une ligne seule ou sur plusieurs lignes). Les fences `mermaid` sont
+rendues avec le même moteur que l'aperçu. Formules et diagrammes sont incorporés
+en images haute résolution, tandis que le texte du chapitre reste sélectionnable.
+Un bloc invalide ou hors limites conserve son code source dans le PDF. Aucun
+contenu brut de la note n'est exécuté en HTML et le rendu n'utilise ni CDN, ni
+police distante, ni téléchargement d'images.
+
+Le serveur lance Chromium uniquement si le chapitre contient des formules ou
+des diagrammes à rendre. Après `npm ci`, installer le navigateur sous le compte
+qui lance le serveur, ou régler `PLAYWRIGHT_BROWSERS_PATH` sur un cache partagé.
+Sur Debian/Ubuntu, ajouter `--with-deps` à la commande d'installation pour
+installer aussi les bibliothèques système.
+
+```sh
+npx playwright-core install --only-shell chromium
+```
+
+On peut aussi pointer `PDF_CHROMIUM_EXECUTABLE` vers un Chromium installé et
+maintenu par le système. Le sandbox de Chromium est activé par défaut. Réserver
+`PDF_CHROMIUM_NO_SANDBOX=1` aux tests locaux isolés ou à la CI. Si Chromium ne
+démarre pas alors qu'un rendu est nécessaire, l'API renvoie 503. Les exports MD,
+SQLite et les PDF textuels ne dépendent pas de Chromium.
 
 ## API
 
@@ -95,6 +118,9 @@ processus et ne tronquent jamais silencieusement les données :
 - maximum 5 000 racines sélectionnées ;
 - maximum 50 000 lignes par table, 100 000 lignes et 128 Mio de JSON de données au total ;
 - maximum 1 Mio de Markdown par chapitre pour le PDF ;
+- maximum 300 formules ou diagrammes distincts par chapitre à rendre et 30 s
+  pour leur rendu. Une formule de plus de 4 000 caractères, ou un diagramme de
+  plus de 20 000 caractères ou 300 arêtes, conserve sa source ;
 - maximum 200 chapitres dès qu'un ZIP contient du PDF, y compris un ZIP complet ;
 - maximum 16 Mio par PDF et 256 Mio de fichiers avant compression ZIP ;
 - un export à la fois par utilisateur, deux par processus serveur ;
@@ -111,9 +137,10 @@ génération en flux ; cette série ne fournit pas cette infrastructure.
 
 ```text
 npm ci
+npx playwright-core install --only-shell chromium
 npm run typecheck
 npm test -w client
-npm test -w server -- exports.test.ts
+npm test -w server -- exports.test.ts pdfGraphics.test.ts
 npm run build -w client
 npm run dev
 ```
@@ -165,7 +192,6 @@ SELECT * FROM evaluation_chapters;
 
 Les exports comprennent désormais la table whiteboards et les scènes .excalidraw.
 Le détail du format et de la sélection est décrit dans [le guide diagrammes](diagrams-whiteboards.md).
-Les diagrammes Mermaid restent en source dans le PDF textuel.
 
 Les images et courbes `plot` sont détaillées dans [le guide images et fonctions](images-functions.md).
 

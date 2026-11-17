@@ -77,7 +77,16 @@ La page « Emploi du temps » affiche une semaine (lundi à dimanche). Le bouton
 
 ## Export des cours et des données
 
-Export PDF par chapitre, ZIP de sélection et copie complète ZIP/SQLite depuis le profil : voir [la documentation des exports](docs/exports.md).
+Les PDF de chapitre et de ZIP incorporent les formules LaTeX et les diagrammes
+Mermaid. Après `npm ci`, installer Chromium sur la machine du **serveur** avec
+la commande suivante. Sur Linux, ajouter `--with-deps` pour les bibliothèques système.
+
+```sh
+npx playwright-core install --only-shell chromium
+```
+
+Voir [la documentation des exports](docs/exports.md) pour le déploiement du
+rendu PDF, les exports Markdown et les copies complètes ZIP/SQLite.
 
 ## Diagrammes et tableaux blancs
 
