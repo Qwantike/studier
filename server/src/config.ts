@@ -43,7 +43,10 @@ const schema = z.object({
   TRUST_PROXY: z.coerce.number().int().min(0).default(0),
   ENCRYPTION_KEY: z
     .string()
-    .length(64, 'ENCRYPTION_KEY doit être une chaîne hexadécimale de 64 caractères (32 octets)'),
+    .length(
+      64,
+      'ENCRYPTION_KEY doit être une chaîne hexadécimale de 64 caractères (32 octets)',
+    ),
 })
 
 const parsed = schema.safeParse(process.env)

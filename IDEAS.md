@@ -3,6 +3,7 @@
 Document de réflexion, rien n'est engagé. Les estimations sont indicatives.
 
 **Comment lire les chiffres**
+
 - **Difficulté** : ★ très simple · ★★ simple · ★★★ moyen · ★★★★ difficile · ★★★★★ très difficile.
 - **Temps** : jours de travail effectif (une journée = environ 6 h concentrées), pour une personne aidée par Claude, tests et typecheck compris, déploiement et retours d'utilisateurs exclus. Ce sont des ordres de grandeur, à recalibrer après le premier chantier.
 - Les points marqués « à vérifier » reposent sur des API ou des comportements que je n'ai pas testés dans ton projet.
@@ -22,34 +23,40 @@ Document de réflexion, rien n'est engagé. Les estimations sont indicatives.
 | 7   | Couleur du texte et surlignage                            | ★★★        | 2 à 3 j                                                 |
 
 ### 1. Tableau blanc (Excalidraw)
+
 - Composant React à charger paresseux, comme l'éditeur de chapitre (il est lourd). Compatibilité avec ta version de React : à vérifier.
 - La scène se sauvegarde en JSON dans une nouvelle table (avec `user_id` et clés composites, comme le reste), rattachée à une matière ou un chapitre.
 - Attention à la taille : les images incorporées gonflent vite la scène, il faut un plafond par scène et par compte.
 - Export PNG/SVG en bonus.
 
 ### 2. Courbe de l'oubli et répétition espacée
+
 - Modèle simple : rétention estimée `R = e^(−t/S)`, où la stabilité `S` augmente à chaque révision réussie. Pour aller plus loin, des algorithmes comme SM-2 ou FSRS existent.
 - Nouvelle table `reviews` (chapitre, date, auto-évaluation), calcul de la rétention estimée affichée par chapitre, vue « à réviser aujourd'hui ».
 - Se relie naturellement aux statuts de chapitre existants (`seen`, `understood`, `revised`) et aux dates d'évaluation.
 - À présenter comme une estimation : les paramètres ne sont pas calibrés sur chaque personne.
 
 ### 3. Téléchargement complet (ZIP)
+
 - Arborescence `Année/Semestre/Matière/NN-Chapitre.md`, avec nettoyage des noms (caractères interdits, doublons, longueur).
 - Génération côté serveur en flux, ou côté client avec une bibliothèque de ZIP. Prévoir un plafond de taille et une limite de débit.
 - Sert aussi d'« export de mes données », utile pour le RGPD.
 - Le réimport (ZIP vers hiérarchie recréée) double presque le travail ; l'import multi-fichiers actuel couvre déjà le cas d'une matière.
 
 ### 4. Dashboard gamifié
+
 - Séries de jours d'étude, objectifs hebdomadaires, badges, progression par matière.
 - Demande une table d'événements d'activité (ce qui est révisé, quand).
 - Plus pertinent après l'idée 2. Garder une option pour le masquer : des mécaniques culpabilisantes peuvent nuire plus qu'aider.
 
 ### 5. Export PDF
+
 - **Rapide** : une feuille de style d'impression et `window.print()` (KaTeX et code doivent s'afficher correctement). C'est le point de départ que je conseille.
 - **Propre côté serveur** : un navigateur sans interface (Chromium) qui imprime la page. Le coût mémoire est élevé sur un VPS partagé : à mesurer avant, et à limiter en débit.
 - Une bibliothèque de PDF côté client est possible, mais la qualité du rendu (maths, code) est incertaine.
 
 ### 6. Évaluations générées
+
 - Fonction très demandée par les étudiants, mais la plus lourde : appel à un modèle d'IA depuis le serveur (clé dans le `.env`), avec un coût par génération.
 - À prévoir : quotas et limites de débit par compte, sortie structurée en JSON validée par zod, tables `quizzes`, `questions`, `attempts` (avec `user_id`).
 - Niveaux de difficulté et exemple d'évaluation : à passer dans l'instruction envoyée au modèle.
@@ -58,6 +65,7 @@ Document de réflexion, rien n'est engagé. Les estimations sont indicatives.
 - **MVP** : QCM à partir d'un chapitre, difficulté au choix, corrigé, score. Le reste vient après.
 
 ### 7. Couleur du texte et surlignage
+
 - Surlignage : syntaxe `==texte==` (lisible dans Obsidian et Typora), environ 1 j.
 - Couleur : palette fixe de quelques teintes adaptées au mode sombre, plus fragile car il n'existe pas de syntaxe Markdown standard, environ 2 j.
 - Prérequis : relire `MarkdownEditor.tsx` et `editor.css`.
@@ -84,8 +92,8 @@ Document de réflexion, rien n'est engagé. Les estimations sont indicatives.
 | N   | Interface en anglais                                                              | ★★★        | 3 à 5 j                                               | Ouvre à d'autres publics ; à faire si tu vises au-delà de la France                                                                                                  |
 | O   | Mode lecture et verrou de chapitre                                                | ★★         | 0,5 j (mode lecture) ou 1,5 à 2 j (verrou persistant) | Évite les modifications accidentelles et rend la lecture plus propre ; Crepe sait passer l'éditeur en lecture seule                                                  |
 
-
 ### O. Mode lecture et verrou de chapitre
+
 - **Niveau 1, mode lecture (interface seulement)** : un cadenas dans l'en-tête du chapitre passe l'éditeur en lecture seule (Crepe expose `setReadonly`, vérifié dans sa documentation). Pas de migration, environ 0,5 j. Ne protège pas contre un autre onglet resté ouvert.
 - **Niveau 2, verrou persistant (comme Notion)** : colonne `locked` sur `chapters` (migration), refus côté serveur de toute modification du titre ou du contenu d'un chapitre verrouillé (sinon l'autosave d'un autre onglet pourrait l'écraser), environ 1,5 à 2 j avec les tests. C'est la version conseillée : elle tient quand on oublie qu'on a verrouillé.
 - À décider : le verrou ne bloque ni le statut ni le déplacement dans l'arbre ; la suppression d'un chapitre verrouillé exige ou non un déverrouillage préalable.
@@ -98,6 +106,7 @@ Document de réflexion, rien n'est engagé. Les estimations sont indicatives.
 ## 3. Prérequis avant d'ouvrir au public
 
 Ce ne sont pas des fonctionnalités, mais elles passent avant tout le reste :
+
 - Mot de passe oublié et vérification d'e-mail (2 à 4 j, avec un service d'envoi).
 - Sauvegardes quotidiennes avec copie hors du serveur, et restauration testée.
 - Quotas par compte (nombre de chapitres, volume de texte).
